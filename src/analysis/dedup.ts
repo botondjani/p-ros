@@ -15,7 +15,7 @@ export const DEFAULT_DEDUP: DedupOptions = { maxHamming: 6, windowMinutes: 10 };
  * hasonlítunk; egy hasonló párból a jobb pontszámú marad meg, a másik
  * `duplicate` jelölést és `duplicateOf` hivatkozást kap.
  *
- * Visszaadja a duplikátumnak jelölt képek azonosítóit.
+ * Visszaad egy térképet: duplikátum azonosítója → a megtartott kép azonosítója.
  */
 export function findDuplicates(photos: Photo[], options: Partial<DedupOptions> = {}): Map<string, string> {
   const opts = { ...DEFAULT_DEDUP, ...options };
@@ -58,10 +58,15 @@ export function findDuplicates(photos: Photo[], options: Partial<DedupOptions> =
   return dupOf;
 }
 
-/** Duplikátum-jelölés alkalmazása helyben. */
+/**
+ * Duplikátum-jelölés alkalmazása helyben. A minőség miatt már kizárt
+ * (sötét, életlen) vagy a user által kidobott képeket kihagyjuk, így azok
+ * megtartják a pontosabb indoklást.
+ */
 export function applyDuplicates(photos: Photo[], options?: Partial<DedupOptions>): number {
-  const dupOf = findDuplicates(photos, options);
-  for (const p of photos) {
+  const candidates = photos.filter((p) => !p.excludedReason || p.excludedReason === 'notSelected');
+  const dupOf = findDuplicates(candidates, options);
+  for (const p of candidates) {
     const of = dupOf.get(p.id);
     if (of && p.excludedReason !== 'user') {
       p.excludedReason = 'duplicate';

@@ -114,3 +114,6 @@ export const useStore = create<State>((set, get) => {
     setTheme: (theme) => mutate((p) => ({ ...p, theme })),
   };
 });
+
+// Fejlesztéshez/teszteléshez: az állapot elérhető a konzolból.
+if (import.meta.env?.DEV && typeof window !== 'undefined') (window as unknown as { __store: typeof useStore }).__store = useStore;

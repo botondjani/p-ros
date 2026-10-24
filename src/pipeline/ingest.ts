@@ -57,7 +57,7 @@ export async function ingest(
         gps: res.gps,
         width: res.width,
         height: res.height,
-        quality: { sharpness: res.sharpness, brightness: res.brightness, contrast: res.contrast, hash: res.hash, score: 0 },
+        quality: { sharpness: res.sharpness, blurRatio: res.blurRatio, brightness: res.brightness, contrast: res.contrast, hash: res.hash, score: 0 },
         included: true,
       });
     } finally {

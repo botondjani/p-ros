@@ -17,6 +17,7 @@ export interface IngestSuccess {
   width: number;
   height: number;
   sharpness: number;
+  blurRatio: number;
   brightness: number;
   contrast: number;
   hash: string;
@@ -37,4 +38,4 @@ export type IngestResponse = IngestSuccess | IngestFailure;
 
 export const DISPLAY_MAX = 1600;
 export const THUMB_MAX = 720;
-export const ANALYSIS_MAX = 256;
+export const ANALYSIS_MAX = 768;

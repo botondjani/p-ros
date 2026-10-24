@@ -19,8 +19,14 @@ export interface DateRange {
 }
 
 export interface PhotoQuality {
-  /** Laplace-variancia egy 256px-es szürkeárnyalatos másolaton. */
+  /** Laplace-variancia egy 768 px-es szürkeárnyalatos másolaton. */
   sharpness: number;
+  /**
+   * A Laplace-variancia aránya 768 px és 384 px között. Éles képen a finom
+   * részletek megmaradnak (≈0,55–1), bemozdult vagy életlen képen a finomabb
+   * skálán eltűnnek (≈0,3), függetlenül a téma kontrasztjától.
+   */
+  blurRatio: number;
   /** Átlagos fényerő 0–1 között. */
   brightness: number;
   /** Fényerő szórása 0–1 között. */

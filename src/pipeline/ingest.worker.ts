@@ -2,7 +2,7 @@
 import { readExif } from './exif';
 import { decodeHeic, isHeic } from './heic';
 import { dHash } from '../analysis/phash';
-import { exposureStats, laplacianVariance, toGray } from '../analysis/quality';
+import { exposureStats, sharpnessStats, toGray } from '../analysis/quality';
 import { ANALYSIS_MAX, DISPLAY_MAX, THUMB_MAX, type IngestRequest, type IngestResponse } from './protocol';
 
 declare const self: DedicatedWorkerGlobalScope;
@@ -69,6 +69,7 @@ async function process(req: IngestRequest): Promise<IngestResponse> {
     mid.close();
     const gray = toGray(ctx.getImageData(0, 0, a.w, a.h).data, a.w, a.h);
     const { brightness, contrast } = exposureStats(gray);
+    const { sharpness, blurRatio } = sharpnessStats(gray, a.w, a.h);
 
     const timeSource = takenAtExif != null ? 'exif' : req.lastModified ? 'file' : 'none';
     return {
@@ -79,7 +80,8 @@ async function process(req: IngestRequest): Promise<IngestResponse> {
       gps,
       width,
       height,
-      sharpness: laplacianVariance(gray, a.w, a.h),
+      sharpness,
+      blurRatio,
       brightness,
       contrast,
       hash: dHash(gray, a.w, a.h),

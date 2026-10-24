@@ -16,7 +16,7 @@ function photo(p: Partial<Photo>): Photo {
     timeSource: 'exif',
     width: 4000,
     height: 3000,
-    quality: { sharpness: 200, brightness: 0.5, contrast: 0.2, hash: '', score: 0.5 },
+    quality: { sharpness: 200, blurRatio: 0.7, brightness: 0.5, contrast: 0.2, hash: '', score: 0.5 },
     included: true,
     ...p,
   };

@@ -30,11 +30,16 @@ export function selectBest(photos: Photo[], opts: SelectOptions = DEFAULTS): str
   const picked: Photo[] = [];
   const pool = [...good];
 
+  const sameBurst = (p: Photo, q: Photo) =>
+    p.takenAt != null && q.takenAt != null && Math.abs(p.takenAt - q.takenAt) < 120_000 && hammingDistance(p.quality.hash, q.quality.hash) <= 10;
+
   while (picked.length < n && pool.length) {
-    let bestIdx = 0;
+    let bestIdx = -1;
     let bestScore = -Infinity;
     for (let i = 0; i < pool.length; i++) {
       const p = pool[i];
+      // ugyanabból a sorozatból csak akkor kerül be második kép, ha a minimumhoz kell
+      if (picked.length >= opts.min && picked.some((q) => sameBurst(p, q))) continue;
       let penalty = 0;
       for (const q of picked) {
         if (p.takenAt != null && q.takenAt != null && Math.abs(p.takenAt - q.takenAt) < 120_000) penalty += 0.25;
@@ -47,6 +52,7 @@ export function selectBest(photos: Photo[], opts: SelectOptions = DEFAULTS): str
         bestIdx = i;
       }
     }
+    if (bestIdx < 0) break;
     picked.push(pool.splice(bestIdx, 1)[0]);
   }
 
