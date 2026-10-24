@@ -1,0 +1,1 @@
+async function e(e){return globalThis.claude,null}export{e as t};
