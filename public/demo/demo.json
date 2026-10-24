@@ -1,0 +1,232 @@
+{
+ "title": "Portugália, tavasszal",
+ "finalMessage": "Köszönöm ezt az öt napot. A Pena-palota lépcsőin megbeszéltük, hogy jövőre is elmegyünk valahová – tartom magunkat hozzá.\n\nPuszi,\nB.",
+ "items": [
+  {
+   "file": "l01.webp",
+   "takenAt": "2025-05-14T17:40:12",
+   "lat": 38.7193,
+   "lng": -9.1327
+  },
+  {
+   "file": "l02.webp",
+   "takenAt": "2025-05-14T17:55:40",
+   "lat": 38.7189,
+   "lng": -9.1331
+  },
+  {
+   "file": "l03.webp",
+   "takenAt": "2025-05-14T18:25:03",
+   "lat": 38.7114,
+   "lng": -9.13
+  },
+  {
+   "file": "l04.webp",
+   "takenAt": "2025-05-14T19:30:27",
+   "lat": 38.7106,
+   "lng": -9.142
+  },
+  {
+   "file": "l05.webp",
+   "takenAt": "2025-05-14T19:30:29",
+   "lat": 38.7106,
+   "lng": -9.142
+  },
+  {
+   "file": "l06.webp",
+   "takenAt": "2025-05-14T20:10:55"
+  },
+  {
+   "file": "l07.webp",
+   "takenAt": "2025-05-14T20:11:02",
+   "lat": 38.7118,
+   "lng": -9.1435
+  },
+  {
+   "file": "s01.webp",
+   "takenAt": "2025-05-15T10:05:10",
+   "lat": 38.7975,
+   "lng": -9.388
+  },
+  {
+   "file": "s02.webp",
+   "takenAt": "2025-05-15T10:20:44",
+   "lat": 38.799,
+   "lng": -9.387
+  },
+  {
+   "file": "s03.webp",
+   "takenAt": "2025-05-15T11:02:31",
+   "lat": 38.7963,
+   "lng": -9.3959
+  },
+  {
+   "file": "s04.webp",
+   "takenAt": "2025-05-15T13:10:09",
+   "lat": 38.7876,
+   "lng": -9.3906
+  },
+  {
+   "file": "s05.webp",
+   "takenAt": "2025-05-15T13:25:48",
+   "lat": 38.7878,
+   "lng": -9.3904
+  },
+  {
+   "file": "s06.webp",
+   "takenAt": "2025-05-15T13:41:20",
+   "lat": 38.7877,
+   "lng": -9.3909
+  },
+  {
+   "file": "s07.webp",
+   "takenAt": "2025-05-15T14:30:02",
+   "lat": 38.786,
+   "lng": -9.389
+  },
+  {
+   "file": "s08.webp",
+   "takenAt": "2025-05-15T15:00:37",
+   "lat": 38.781,
+   "lng": -9.39
+  },
+  {
+   "file": "s09.webp",
+   "takenAt": "2025-05-15T15:20:05",
+   "lat": 38.7812,
+   "lng": -9.3903
+  },
+  {
+   "file": "s10.webp",
+   "takenAt": "2025-05-15T15:20:21",
+   "lat": 38.7812,
+   "lng": -9.3903
+  },
+  {
+   "file": "s11.webp",
+   "takenAt": "2025-05-15T16:10:44",
+   "lat": 38.7975,
+   "lng": -9.3905
+  },
+  {
+   "file": "s12.webp",
+   "takenAt": "2025-05-15T16:52:18",
+   "lat": 38.794,
+   "lng": -9.421
+  },
+  {
+   "file": "c01.webp",
+   "takenAt": "2025-05-16T09:41:00",
+   "lat": 38.7804,
+   "lng": -9.4989
+  },
+  {
+   "file": "c02.webp",
+   "takenAt": "2025-05-16T10:06:30",
+   "lat": 38.7808,
+   "lng": -9.4995
+  },
+  {
+   "file": "p01.webp",
+   "takenAt": "2025-05-17T10:31:12",
+   "lat": 41.1406,
+   "lng": -8.6131
+  },
+  {
+   "file": "p02.webp",
+   "takenAt": "2025-05-17T10:46:40",
+   "lat": 41.1408,
+   "lng": -8.6127
+  },
+  {
+   "file": "p03.webp",
+   "takenAt": "2025-05-17T11:10:05",
+   "lat": 41.1411,
+   "lng": -8.6125
+  },
+  {
+   "file": "p04.webp",
+   "takenAt": "2025-05-17T12:01:51",
+   "lat": 41.144,
+   "lng": -8.614
+  },
+  {
+   "file": "p05.webp",
+   "takenAt": "2025-05-17T13:02:26"
+  },
+  {
+   "file": "p06.webp",
+   "takenAt": "2025-05-17T14:20:13",
+   "lat": 41.138,
+   "lng": -8.612
+  },
+  {
+   "file": "p07.webp",
+   "takenAt": "2025-05-17T15:00:48",
+   "lat": 41.1376,
+   "lng": -8.6116
+  },
+  {
+   "file": "p08.webp",
+   "takenAt": "2025-05-17T17:30:30",
+   "lat": 41.1395,
+   "lng": -8.6094
+  },
+  {
+   "file": "p09.webp",
+   "takenAt": "2025-05-17T20:10:09",
+   "lat": 41.1399,
+   "lng": -8.6093
+  },
+  {
+   "file": "p10.webp",
+   "takenAt": "2025-05-17T20:45:33",
+   "lat": 41.1373,
+   "lng": -8.609
+  },
+  {
+   "file": "p11.webp",
+   "takenAt": "2025-05-17T21:40:57",
+   "lat": 41.1373,
+   "lng": -8.6091
+  }
+ ],
+ "credits": {
+  "license": "Unsplash License (https://unsplash.com/license)",
+  "authors": [
+   "Ali Zeynalli",
+   "Andre Fonseca",
+   "Benjamin Voros",
+   "Diogo Lemos",
+   "Edgar",
+   "Eduard Pretsi",
+   "Ekin-Fidel Tanriverdi",
+   "Filipe Nobre",
+   "Helder Burato Berto",
+   "Julia Solonina",
+   "Marina Maliutina",
+   "Max",
+   "Mylo Kaye",
+   "Oleksandra Sereda",
+   "Pascal Bernardon",
+   "Polina Kuzovkova",
+   "Rafael Peier",
+   "Raja Sen",
+   "Renato Marzan",
+   "Sergiy Kmet",
+   "Sokmean Nou",
+   "Tomás Evaristo",
+   "Unsplash",
+   "Yomex Owo",
+   "gina"
+  ],
+  "note": "Az időpontok és koordináták illusztratívak; a l05 és l07 a minőségszűrés bemutatására szándékosan elrontott másolat."
+ },
+ "landmarks": [
+  {
+   "name": "Cabo da Roca",
+   "lat": 38.7804,
+   "lng": -9.4989
+  }
+ ]
+}

@@ -1,0 +1,185 @@
+@import 'tailwindcss';
+
+/* Fontok: helyben kiszolgálva (offline is működik), latin-ext a magyar ő/ű miatt. */
+@import '@fontsource-variable/fraunces/opsz.css';
+@import '@fontsource-variable/fraunces/opsz-italic.css';
+@import '@fontsource-variable/inter/index.css';
+
+@theme {
+  --font-display: 'Fraunces Variable', 'Iowan Old Style', Georgia, serif;
+  --font-sans: 'Inter Variable', ui-sans-serif, system-ui, sans-serif;
+  --color-bg: var(--c-bg);
+  --color-paper: var(--c-paper);
+  --color-ink: var(--c-ink);
+  --color-muted: var(--c-muted);
+  --color-accent: var(--c-accent);
+  --color-accent-ink: var(--c-accent-ink);
+  --color-line: var(--c-line);
+  --color-soft: var(--c-soft);
+  --ease-out-soft: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* Témák: mindegyik egy-egy hangulat, a térképstílussal összehangolva (lásd app/themes.ts). */
+:root,
+[data-theme='papir'] {
+  --c-bg: #f4efe6;
+  --c-paper: #fbf8f2;
+  --c-ink: #2b2420;
+  --c-muted: #7a6d62;
+  --c-accent: #b5532f;
+  --c-accent-ink: #fff8f2;
+  --c-line: #e2d8c9;
+  --c-soft: #ebe3d6;
+  color-scheme: light;
+}
+[data-theme='ejszaka'] {
+  --c-bg: #14161d;
+  --c-paper: #1c1f28;
+  --c-ink: #ece6da;
+  --c-muted: #9a95a0;
+  --c-accent: #e2b46b;
+  --c-accent-ink: #1a1408;
+  --c-line: #2d313d;
+  --c-soft: #232733;
+  color-scheme: dark;
+}
+[data-theme='tenger'] {
+  --c-bg: #eef2f1;
+  --c-paper: #f8faf9;
+  --c-ink: #17302f;
+  --c-muted: #5d7472;
+  --c-accent: #1f6f6a;
+  --c-accent-ink: #f2fbfa;
+  --c-line: #d3dfdd;
+  --c-soft: #e1e9e7;
+  color-scheme: light;
+}
+[data-theme='barack'] {
+  --c-bg: #f8ebe4;
+  --c-paper: #fdf6f2;
+  --c-ink: #3a2230;
+  --c-muted: #8b6f78;
+  --c-accent: #9c3d63;
+  --c-accent-ink: #fff5f9;
+  --c-line: #eed6cc;
+  --c-soft: #f2dfd6;
+  color-scheme: light;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+  scroll-behavior: smooth;
+}
+body {
+  background: var(--c-bg);
+  color: var(--c-ink);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  transition: background-color 0.5s ease, color 0.5s ease;
+}
+
+.font-display {
+  font-optical-sizing: auto;
+  font-feature-settings: 'ss01' on;
+}
+.numerals {
+  font-variant-numeric: oldstyle-nums proportional-nums;
+}
+.tabular {
+  font-variant-numeric: tabular-nums;
+}
+.eyebrow {
+  font-family: var(--font-sans);
+  font-size: 0.7rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--c-muted);
+  font-weight: 600;
+}
+
+/* Finom papírszemcse a háttéren; SVG-zaj, nem kell hozzá kép. */
+.grain {
+  position: relative;
+  isolation: isolate;
+}
+.grain::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  opacity: 0.35;
+  mix-blend-mode: multiply;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 .5  0 0 0 0 .45  0 0 0 0 .4  0 0 0 .09 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
+}
+[data-theme='ejszaka'] .grain::before {
+  mix-blend-mode: screen;
+  opacity: 0.25;
+}
+
+/* Fotó „nyomat”: vékony keret és puha árnyék. */
+.print {
+  background: var(--c-paper);
+  box-shadow:
+    0 1px 2px rgb(0 0 0 / 0.06),
+    0 8px 24px -8px rgb(0 0 0 / 0.18);
+}
+
+/* Beúszó animáció görgetéskor (IntersectionObserver állítja a data-in attribútumot). */
+.reveal {
+  opacity: 0;
+  transform: translateY(18px);
+  transition:
+    opacity 0.9s var(--ease-out-soft),
+    transform 0.9s var(--ease-out-soft);
+}
+.reveal[data-in='true'] {
+  opacity: 1;
+  transform: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  .reveal {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+:focus-visible {
+  outline: 2px solid var(--c-accent);
+  outline-offset: 3px;
+  border-radius: 4px;
+}
+
+@keyframes float-a {
+  0%, 100% { transform: rotate(-7deg) translateY(0); }
+  50% { transform: rotate(-6deg) translateY(-6px); }
+}
+@keyframes float-b {
+  0%, 100% { transform: rotate(5deg) translateY(0); }
+  50% { transform: rotate(6deg) translateY(-8px); }
+}
+@keyframes float-c {
+  0%, 100% { transform: rotate(-1deg) translateY(0); }
+  50% { transform: rotate(-2deg) translateY(-5px); }
+}
+@keyframes shimmer {
+  from { background-position: -200% 0; }
+  to { background-position: 200% 0; }
+}
+.skeleton {
+  background: linear-gradient(90deg, var(--c-soft) 25%, var(--c-line) 37%, var(--c-soft) 63%);
+  background-size: 400% 100%;
+  animation: shimmer 1.6s ease infinite;
+}
