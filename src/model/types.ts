@@ -88,6 +88,8 @@ export interface Project {
   finalMessage: string;
   createdAt: number;
   isDemo?: boolean;
+  /** Exportban: az eredeti képszám (az export csak a látható képeket tartalmazza). */
+  photoTotal?: number;
 }
 
 /**

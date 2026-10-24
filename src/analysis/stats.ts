@@ -78,7 +78,7 @@ export function computeStats(project: Project): ProjectStats {
   const countries = new Set(located.map((c) => c.location!.country).filter(Boolean));
 
   return {
-    photoCount: all.length,
+    photoCount: project.photoTotal ?? all.length,
     shownCount: all.filter((p) => p.included).length,
     placeCount: placeNames.size,
     dayCount: days.size,

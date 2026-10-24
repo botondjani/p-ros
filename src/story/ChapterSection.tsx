@@ -25,7 +25,7 @@ function chapterDate(c: Chapter) {
 }
 
 export const ChapterSection = forwardRef<HTMLElement, Props>(function ChapterSection({ chapter, index }, ref) {
-  const { project, editing } = useStory();
+  const { project, editing, standalone } = useStory();
   const lightbox = useLightbox();
   const updateChapter = useStore((s) => s.updateChapter);
   const headRef = useReveal<HTMLDivElement>();
@@ -39,7 +39,7 @@ export const ChapterSection = forwardRef<HTMLElement, Props>(function ChapterSec
   const place = chapter.location?.name ?? chapter.location?.country;
 
   return (
-    <section ref={ref} data-chapter-id={chapter.id} className="scroll-mt-[calc(34svh+4rem)] py-16 sm:py-24 lg:scroll-mt-24" aria-labelledby={`ch-${chapter.id}`}>
+    <section ref={ref} data-chapter-id={chapter.id} className={`py-16 sm:py-24 ${standalone ? 'scroll-mt-[calc(34svh+1rem)] lg:scroll-mt-8' : 'scroll-mt-[calc(34svh+4rem)] lg:scroll-mt-24'}`} aria-labelledby={`ch-${chapter.id}`}>
       <div ref={headRef} className="reveal mb-8">
         <p className="eyebrow flex flex-wrap items-center gap-x-3 gap-y-1">
           <span className="font-display text-base font-[500] normal-case tracking-normal text-accent numerals">{String(index + 1).padStart(2, '0')}</span>

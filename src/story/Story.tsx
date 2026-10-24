@@ -47,7 +47,7 @@ function useActiveChapter(ids: string[]) {
 }
 
 export function Story() {
-  const { project } = useStory();
+  const { project, standalone } = useStory();
   const ids = project.chapters.map((c) => c.id);
   const { active, register } = useActiveChapter(ids);
   const hasMap = project.chapters.some((c) => c.location);
@@ -58,7 +58,11 @@ export function Story() {
         <Hero />
         <div id="fejezetek" className={hasMap ? 'lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(0,0.9fr)]' : ''}>
           {hasMap && (
-            <div className="sticky top-[3.25rem] z-20 h-[34svh] border-b border-line lg:order-2 lg:h-[calc(100svh-3.25rem)] lg:border-b-0 lg:border-l">
+            <div
+              className={`sticky z-20 h-[34svh] border-b border-line lg:order-2 lg:border-b-0 lg:border-l ${
+                standalone ? 'top-0 lg:h-svh' : 'top-[3.25rem] lg:h-[calc(100svh-3.25rem)]'
+              }`}
+            >
               <Suspense fallback={<div className="h-full w-full bg-soft" />}>
                 <MapPanel activeChapterId={active} />
               </Suspense>

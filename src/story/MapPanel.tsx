@@ -5,6 +5,7 @@ import 'maplibre-gl/dist/maplibre-gl.css';
 import { useStory } from './context';
 import { themeById } from '../app/themes';
 import { RouteSketch } from './RouteSketch';
+import { mapWorkerUrl } from './mapWorker';
 import type { Chapter } from '../model/types';
 
 const reducedMotion = () => typeof matchMedia !== 'undefined' && matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -49,13 +50,20 @@ export default function MapPanel({ activeChapterId }: { activeChapterId?: string
   // Térkép létrehozása (és újraépítése témaváltáskor).
   useEffect(() => {
     if (!container.current || !located.length) return;
-    if (!webglAvailable() || (typeof navigator !== 'undefined' && navigator.onLine === false)) {
+    // file:// alól a böngésző nem indít workert, offline nincs csempe: ilyenkor a vázlat marad
+    const offline = typeof navigator !== 'undefined' && navigator.onLine === false;
+    if (!webglAvailable() || offline || location.protocol === 'file:') {
       setFailed(true);
       return;
     }
     setReady(false);
     setFailed(false);
 
+    try {
+      maplibregl.setWorkerUrl(mapWorkerUrl());
+    } catch {
+      /* a worker már fut – nem kell újra beállítani */
+    }
     const bounds = new maplibregl.LngLatBounds();
     for (const c of located) bounds.extend([c.location!.lng, c.location!.lat]);
     let map: MlMap;

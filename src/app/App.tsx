@@ -11,6 +11,7 @@ import { restoreSaved, startFiles } from './flow';
 import { useFileDrop } from './useFileDrop';
 import { THEME_BG } from './themes';
 import { IconUpload } from '../lib/icons';
+import { ExportPanel } from '../export/ExportPanel';
 
 export function App() {
   const view = useStore((s) => s.view);
@@ -18,7 +19,7 @@ export function App() {
   const editing = useStore((s) => s.editing);
   const error = useStore((s) => s.error);
   const setError = useStore((s) => s.setError);
-  const [, setPanel] = useState<'export' | 'enhance' | null>(null);
+  const [panel, setPanel] = useState<'export' | 'enhance' | null>(null);
 
   useEffect(() => {
     restoreSaved();
@@ -53,6 +54,8 @@ export function App() {
           </footer>
         </StoryContext.Provider>
       )}
+
+      {panel === 'export' && project && <ExportPanel onClose={() => setPanel(null)} />}
 
       {dragging && (
         <div className="pointer-events-none fixed inset-0 z-[60] flex items-center justify-center bg-bg/80 backdrop-blur-sm">
