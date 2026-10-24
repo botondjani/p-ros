@@ -12,6 +12,7 @@ import { useFileDrop } from './useFileDrop';
 import { THEME_BG } from './themes';
 import { IconUpload } from '../lib/icons';
 import { ExportPanel } from '../export/ExportPanel';
+import { EnhancePanel } from '../ai/EnhancePanel';
 
 export function App() {
   const view = useStore((s) => s.view);
@@ -56,6 +57,7 @@ export function App() {
       )}
 
       {panel === 'export' && project && <ExportPanel onClose={() => setPanel(null)} />}
+      {panel === 'enhance' && project && <EnhancePanel onClose={() => setPanel(null)} />}
 
       {dragging && (
         <div className="pointer-events-none fixed inset-0 z-[60] flex items-center justify-center bg-bg/80 backdrop-blur-sm">
