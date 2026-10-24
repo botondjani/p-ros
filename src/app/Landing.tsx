@@ -1,7 +1,41 @@
-import { useRef } from 'react';
+import { lazy, Suspense, useEffect, useRef, useState } from 'react';
 import { useStore } from '../model/store';
 import { openSaved, startDemo, startFiles } from './flow';
 import { IconCamera, IconPin, IconShield, IconUpload } from '../lib/icons';
+
+const DemoPreview = lazy(() => import('./DemoPreview'));
+const prefetchDemo = () => import('./DemoPreview');
+
+/**
+ * A minta csak az első görgetés/érintés után töltődik be, és csak ha közel
+ * van a látómezőhöz: így az első betöltés gyors marad (a térkép kódja nagy).
+ */
+function useNearViewport<T extends HTMLElement>(margin = '600px') {
+  const ref = useRef<T>(null);
+  const [near, setNear] = useState(false);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el || near) return;
+    let io: IntersectionObserver | undefined;
+    const start = () => {
+      window.removeEventListener('scroll', start);
+      window.removeEventListener('pointerdown', start);
+      prefetchDemo();
+      if (typeof IntersectionObserver === 'undefined') return setNear(true);
+      io = new IntersectionObserver((e) => e.some((x) => x.isIntersecting) && setNear(true), { rootMargin: `${margin} 0px` });
+      io.observe(el);
+    };
+    // a „Nézd meg a példát” linkre kattintás is görgetés, így az is elindítja
+    window.addEventListener('scroll', start, { passive: true, once: true });
+    window.addEventListener('pointerdown', start, { passive: true, once: true });
+    return () => {
+      window.removeEventListener('scroll', start);
+      window.removeEventListener('pointerdown', start);
+      io?.disconnect();
+    };
+  }, [near, margin]);
+  return { ref, near };
+}
 
 const FEATURES = [
   { icon: IconCamera, title: 'Kiválogatja a legjobbakat', text: 'Kiszűri a bemozdult, sötét és ismétlődő képeket, és fejezetenként a legszebbeket teszi előre.' },
@@ -13,10 +47,12 @@ export function Landing() {
   const input = useRef<HTMLInputElement>(null);
   const saved = useStore((s) => s.savedProject);
   const error = useStore((s) => s.error);
+  const demo = useNearViewport<HTMLDivElement>();
+  const pick = () => input.current?.click();
 
   return (
     <main className="grain min-h-svh">
-      <div className="mx-auto flex min-h-svh max-w-6xl flex-col px-5 pb-10 pt-6 sm:px-10">
+      <div className="mx-auto flex max-w-6xl flex-col px-5 pb-10 pt-6 sm:px-10 lg:min-h-svh">
         <nav className="flex items-center justify-between">
           <span className="font-display text-xl font-[500] tracking-tight">Időkapszula</span>
           {saved && (
@@ -26,7 +62,7 @@ export function Landing() {
           )}
         </nav>
 
-        <section className="grid flex-1 items-center gap-12 py-14 lg:grid-cols-[1.15fr_1fr] lg:py-0">
+        <section className="grid flex-1 items-center gap-10 pb-4 pt-10 lg:grid-cols-[1.15fr_1fr] lg:gap-12 lg:py-0">
           <div>
             <p className="eyebrow mb-6">Ajándék, ami a fotóidból készül</p>
             <h1 className="font-display text-[clamp(2.8rem,7.5vw,6rem)] font-[340] leading-[0.98] tracking-[-0.02em]">
@@ -40,17 +76,17 @@ export function Landing() {
             </p>
             <div className="mt-9 flex flex-col gap-3 sm:flex-row sm:items-center">
               <button
-                onClick={startDemo}
-                className="rounded-full bg-accent px-7 py-4 text-base font-semibold text-accent-ink shadow-[0_10px_30px_-12px_var(--c-accent)] transition hover:-translate-y-0.5 hover:shadow-[0_16px_34px_-12px_var(--c-accent)] active:translate-y-0"
+                onClick={pick}
+                className="flex items-center justify-center gap-2 rounded-full bg-accent px-7 py-4 text-base font-semibold text-accent-ink shadow-[0_10px_30px_-12px_var(--c-accent)] transition hover:-translate-y-0.5 hover:shadow-[0_16px_34px_-12px_var(--c-accent)] active:translate-y-0"
               >
-                Próbáld ki mintaképekkel
+                <IconUpload /> Válaszd ki a fotóidat
               </button>
-              <button
-                onClick={() => input.current?.click()}
+              <a
+                href="#minta"
                 className="flex items-center justify-center gap-2 rounded-full border border-ink/20 px-6 py-4 text-base font-medium transition hover:border-ink"
               >
-                <IconUpload /> Saját képek kiválasztása
-              </button>
+                Nézd meg a példát ↓
+              </a>
               <input
                 ref={input}
                 type="file"
@@ -74,8 +110,24 @@ export function Landing() {
 
           <LandingArt />
         </section>
+      </div>
 
-        <section className="grid gap-8 border-t border-line pt-10 sm:grid-cols-3">
+      <div id="minta" ref={demo.ref} className="scroll-mt-4 border-t border-line pt-14">
+        <div className="mx-auto max-w-6xl px-5 sm:px-10">
+          <p className="eyebrow">Így néz ki</p>
+          <p className="font-display mt-3 max-w-2xl text-2xl font-[380] leading-snug sm:text-3xl">
+            Egy négynapos portugáliai út 32 fotóból. Görgess tovább – pontosan ilyet kapsz a saját képeidből.
+          </p>
+        </div>
+        {demo.near && (
+          <Suspense fallback={<div className="skeleton mx-5 mt-10 h-[70svh] rounded-2xl sm:mx-10" />}>
+            <DemoPreview />
+          </Suspense>
+        )}
+      </div>
+
+      <div className="mx-auto max-w-6xl px-5 pb-4 pt-16 sm:px-10">
+        <section className="grid gap-8 sm:grid-cols-3" aria-label="Hogyan működik">
           {FEATURES.map(({ icon: Icon, title, text }) => (
             <div key={title}>
               <Icon className="mb-3 text-accent" width={22} height={22} />
@@ -85,31 +137,45 @@ export function Landing() {
           ))}
         </section>
       </div>
+
+      <section className="border-t border-line px-5 py-20 text-center sm:px-10" aria-label="Kezdd el">
+        <h2 className="font-display text-[clamp(2rem,6vw,3.4rem)] font-[350] leading-tight">Most a te képeiden.</h2>
+        <p className="mx-auto mt-4 max-w-md text-muted">A képeid nem hagyják el a telefonodat vagy a gépedet. Regisztráció sincs.</p>
+        <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
+          <button onClick={pick} className="flex w-full max-w-xs items-center justify-center gap-2 rounded-full bg-accent px-7 py-4 font-semibold text-accent-ink sm:w-auto">
+            <IconUpload /> Válaszd ki a fotóidat
+          </button>
+          <button onClick={startDemo} className="w-full max-w-xs rounded-full border border-ink/20 px-6 py-4 font-medium hover:border-ink sm:w-auto">
+            Próbáld ki a szerkesztőt a mintán
+          </button>
+        </div>
+      </section>
     </main>
   );
 }
 
-/** Dekoratív, kép nélküli „nyomatköteg” – gyors LCP, nincs hálózati kérés. */
+/** „Nyomatköteg” két valódi mintaképpel (kicsi, ~50 KB) és egy rajzolt útvonallal. */
 function LandingArt() {
+  const thumb = (f: string) => `${import.meta.env.BASE_URL}demo/thumbs/${f}.webp`;
   return (
-    <div className="relative mx-auto hidden aspect-[5/6] w-full max-w-[440px] lg:block" aria-hidden>
-      <div className="print absolute left-[4%] top-[10%] w-[58%] p-3 pb-12" style={{ animation: 'float-a 9s ease-in-out infinite' }}>
-        <div className="aspect-[4/5] bg-[linear-gradient(160deg,#f2c48d_0%,#e08b5b_45%,#7d4a5a_100%)]" />
-        <p className="font-display absolute bottom-3 left-4 text-sm italic text-muted">május 15.</p>
+    <div className="relative mx-auto aspect-[5/6] w-full max-w-[340px] sm:max-w-[400px] lg:max-w-[440px]" aria-hidden>
+      <div className="print absolute left-[4%] top-[10%] w-[52%] p-2.5 pb-10 sm:p-3 sm:pb-12" style={{ animation: 'float-a 9s ease-in-out infinite' }}>
+        <img src={thumb('s05')} alt="" width={320} height={480} decoding="async" className="aspect-[4/5] w-full object-cover" />
+        <p className="font-display absolute bottom-2.5 left-3.5 text-sm italic text-muted sm:bottom-3 sm:left-4">május 15. · Sintra</p>
       </div>
-      <div className="print absolute right-[2%] top-[0%] w-[50%] p-3 pb-12" style={{ animation: 'float-b 11s ease-in-out infinite' }}>
-        <div className="aspect-square bg-[linear-gradient(180deg,#9cc4d4_0%,#5e8fa8_55%,#2f4f5f_100%)]" />
-        <p className="font-display absolute bottom-3 left-4 text-sm italic text-muted">Porto</p>
+      <div className="print absolute right-[2%] top-[0%] w-[48%] p-2.5 pb-10 sm:p-3 sm:pb-12" style={{ animation: 'float-b 11s ease-in-out infinite' }}>
+        <img src={thumb('p06')} alt="" width={480} height={320} decoding="async" className="aspect-square w-full object-cover" />
+        <p className="font-display absolute bottom-2.5 left-3.5 text-sm italic text-muted sm:bottom-3 sm:left-4">Porto</p>
       </div>
-      <div className="print absolute bottom-[2%] left-[24%] w-[60%] p-3 pb-12" style={{ animation: 'float-c 10s ease-in-out infinite' }}>
+      <div className="print absolute bottom-[2%] left-[22%] w-[60%] p-2.5 pb-10 sm:p-3 sm:pb-12" style={{ animation: 'float-c 10s ease-in-out infinite' }}>
         <div className="relative aspect-[4/3] overflow-hidden bg-[linear-gradient(170deg,#e9dcc6_0%,#d8c7a7_100%)]">
           <svg viewBox="0 0 200 150" className="absolute inset-0 h-full w-full">
-            <path d="M20 120 C 60 40, 110 130, 180 30" fill="none" stroke="#b5532f" strokeWidth="2.5" strokeDasharray="5 6" />
-            <circle cx="20" cy="120" r="5" fill="#b5532f" />
-            <circle cx="180" cy="30" r="5" fill="#2b2420" />
+            <path d="M40 125 C 70 110, 60 70, 95 60 S 150 40, 165 22" fill="none" stroke="#b5532f" strokeWidth="2.5" strokeDasharray="5 6" />
+            <circle cx="40" cy="125" r="5" fill="#b5532f" />
+            <circle cx="165" cy="22" r="5" fill="#2b2420" />
           </svg>
         </div>
-        <p className="font-display absolute bottom-3 left-4 text-sm italic text-muted">274 km</p>
+        <p className="font-display absolute bottom-2.5 left-3.5 text-sm italic text-muted sm:bottom-3 sm:left-4">306 km</p>
       </div>
     </div>
   );

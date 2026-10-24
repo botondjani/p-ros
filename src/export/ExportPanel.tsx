@@ -1,9 +1,18 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useStore } from '../model/store';
 import { Modal } from '../app/Modal';
 import { buildZip, downloadBlob } from './buildZip';
-import { IconDownload, IconLock } from '../lib/icons';
+import { buildSingleHtml, canShareFiles, shareFile } from './singleFile';
+import { IconDownload, IconLock, IconShare } from '../lib/icons';
+import { IS_ARTIFACT } from '../lib/runtime';
 
+const mb = (b: Blob) => `${(b.size / 1024 / 1024).toFixed(1)} MB`;
+
+/**
+ * Megosztás szerver nélkül: egyetlen HTML-fájl, amit telefonon a rendszer
+ * megosztás-menüjével (Messenger, WhatsApp, e-mail…), gépen letöltve lehet
+ * elküldeni. A weboldal-csomag (zip) haladóknak megmarad.
+ */
 export function ExportPanel({ onClose }: { onClose(): void }) {
   const project = useStore((s) => s.project)!;
   const [usePassword, setUsePassword] = useState(false);
@@ -12,18 +21,30 @@ export function ExportPanel({ onClose }: { onClose(): void }) {
   const [error, setError] = useState('');
   const [done, setDone] = useState<string | null>(null);
   const shown = Object.values(project.photos).filter((p) => p.included).length;
+  const share = useMemo(() => !IS_ARTIFACT && canShareFiles(), []);
+  const pw = usePassword ? password : undefined;
+  const pwInvalid = usePassword && password.length < 4;
 
-  const run = async () => {
+  const run = async (kind: 'file' | 'zip') => {
     setError('');
     setDone(null);
     setProgress(0);
     try {
-      const { blob, fileName } = await buildZip(project, {
-        password: usePassword ? password : undefined,
-        onProgress: (d, t) => setProgress(Math.round((d / t) * 100)),
-      });
-      await downloadBlob(blob, fileName);
-      setDone(`${fileName} · ${(blob.size / 1024 / 1024).toFixed(1)} MB`);
+      const onProgress = (d: number, t: number) => setProgress(Math.round((d / t) * 100));
+      if (kind === 'zip') {
+        const { blob, fileName } = await buildZip(project, { password: pw, onProgress });
+        await downloadBlob(blob, fileName);
+        setDone(`${fileName} letöltve (${mb(blob)}). Csomagold ki, és töltsd fel a mappát egy statikus tárhelyre.`);
+        return;
+      }
+      const { blob, fileName } = await buildSingleHtml(project, { password: pw, onProgress });
+      if (share) {
+        const r = await shareFile(blob, fileName, project.title);
+        if (r === 'shared') setDone(`Elküldve (${mb(blob)}).`);
+      } else {
+        await downloadBlob(blob, fileName);
+        setDone(`${fileName} letöltve (${mb(blob)}). Csatold egy e-mailhez vagy üzenethez.`);
+      }
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
     } finally {
@@ -32,15 +53,11 @@ export function ExportPanel({ onClose }: { onClose(): void }) {
   };
 
   return (
-    <Modal title="Letöltés önálló oldalként" onClose={onClose}>
+    <Modal title="Megosztás" onClose={onClose}>
       <p className="text-muted">
-        Egy zip-fájlt kapsz, benne egy kész weboldallal: <span className="text-ink">{shown} kép</span> kicsinyítve, a szövegeid és a térkép. Bárhová
-        feltöltheted, vagy egyszerűen megnyithatod.
+        Egyetlen fájlt kapsz, benne a teljes emlékkel: <span className="text-ink">{shown} kép</span>, a szövegeid és az útvonal. Küldd el
+        üzenetben vagy e-mailben; a címzett egy koppintással megnyitja.
       </p>
-      <ul className="mt-4 space-y-1.5 text-sm text-muted">
-        <li>• Csak a látható képek kerülnek bele, fájlnevek és képenkénti pontos GPS nélkül.</li>
-        <li>• A zip a gépeden készül, semmi nem megy fel szerverre.</li>
-      </ul>
 
       <label className="mt-6 flex cursor-pointer items-center gap-3 rounded-xl border border-line p-4">
         <input type="checkbox" checked={usePassword} onChange={(e) => setUsePassword(e.target.checked)} className="h-4 w-4 accent-[var(--c-accent)]" />
@@ -52,6 +69,7 @@ export function ExportPanel({ onClose }: { onClose(): void }) {
       </label>
       {usePassword && (
         <input
+          id="share-password"
           type="text"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
@@ -68,27 +86,37 @@ export function ExportPanel({ onClose }: { onClose(): void }) {
       )}
 
       <button
-        onClick={run}
-        disabled={progress !== null || (usePassword && password.length < 4)}
+        onClick={() => run('file')}
+        disabled={progress !== null || pwInvalid}
         className="mt-6 flex w-full items-center justify-center gap-2 rounded-full bg-accent px-6 py-4 font-semibold text-accent-ink transition hover:brightness-110 disabled:opacity-50"
       >
-        <IconDownload />
-        {progress !== null ? `Készül… ${progress}%` : 'ZIP letöltése'}
+        {share ? <IconShare /> : <IconDownload />}
+        {progress !== null ? `Készül… ${progress}%` : share ? 'Megosztás…' : 'Fájl letöltése'}
       </button>
-      {usePassword && password.length > 0 && password.length < 4 && <p className="mt-2 text-center text-xs text-muted">Legalább 4 karakter legyen.</p>}
+      {usePassword && password.length > 0 && pwInvalid && <p className="mt-2 text-center text-xs text-muted">Legalább 4 karakter legyen.</p>}
 
-      {done && (
-        <div className="mt-6 rounded-xl bg-soft p-4 text-sm">
-          <p className="font-medium">Kész: {done}</p>
-          <p className="mt-2 text-muted">
-            Megosztáshoz csomagold ki, és húzd a mappát az{' '}
-            <a href="https://app.netlify.com/drop" target="_blank" rel="noreferrer" className="text-accent underline underline-offset-2">
-              app.netlify.com/drop
-            </a>{' '}
-            oldalra – pár másodperc múlva kapsz egy linket.
-          </p>
-        </div>
-      )}
+      {done && <p className="mt-4 rounded-xl bg-soft p-4 text-sm">{done}</p>}
+
+      <p className="mt-5 text-xs leading-relaxed text-muted">
+        A fájl ezen az eszközön készül, nem megy fel szerverre. Böngészőben megnyitva a teljes, görgethető oldal látszik; ha egy telefon csak
+        előnézetben nyitja meg, akkor is látszanak a képek, a szövegek és az üzeneted.
+        {usePassword && ' Jelszóval csak böngészőben nyitható meg.'}
+      </p>
+
+      <details className="mt-5 text-sm">
+        <summary className="cursor-pointer text-muted hover:text-ink">Haladó: weboldal-csomag (zip) saját tárhelyre</summary>
+        <p className="mt-2 text-muted">
+          Ha saját weboldalként tennéd közzé (Netlify, GitHub Pages, saját szerver): csomagold ki, és töltsd fel a mappa tartalmát. Így a térkép
+          is teljes értékű.
+        </p>
+        <button
+          onClick={() => run('zip')}
+          disabled={progress !== null || pwInvalid}
+          className="mt-3 rounded-full border border-line px-4 py-2 font-medium hover:border-ink disabled:opacity-50"
+        >
+          ZIP letöltése
+        </button>
+      </details>
     </Modal>
   );
 }

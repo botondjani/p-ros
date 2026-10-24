@@ -77,3 +77,14 @@ describe('export segédek', () => {
     expect(viewerHtml('Titkos utunk', 'papir', true)).not.toContain('Titkos utunk');
   });
 });
+
+describe('egyfájlos megosztás', async () => {
+  const { scriptSafe } = await import('../src/export/singleFile');
+  it('a beágyazott script nem zárható le idő előtt', () => {
+    const out = scriptSafe('var a = "</script><script>alert(1)</script>"; // <!-- x');
+    expect(out).not.toMatch(/<\/script/i);
+    expect(out).not.toContain('<!--');
+    // JavaScriptként ugyanazt jelenti
+    expect(new Function(`${out.split('//')[0]}; return a;`)()).toBe('</script><script>alert(1)</script>');
+  });
+});

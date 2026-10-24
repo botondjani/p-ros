@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useStore } from '../model/store';
 import { resetAll } from './flow';
-import { IconCheck, IconDownload, IconEdit, IconPlus, IconSparkles } from '../lib/icons';
+import { IconCheck, IconEdit, IconPlus, IconShare, IconSparkles } from '../lib/icons';
 
 interface Props {
   onExport(): void;
@@ -61,8 +61,8 @@ export function TopBar({ onExport, onEnhance }: Props) {
           <Btn onClick={() => setEditing(!editing)} label={editing ? 'Kész' : 'Szerkesztés'}>
             {editing ? <IconCheck /> : <IconEdit />}
           </Btn>
-          <Btn onClick={onExport} label="Letöltés" primary>
-            <IconDownload />
+          <Btn onClick={onExport} label="Megosztás" primary>
+            <IconShare />
           </Btn>
         </div>
       </div>

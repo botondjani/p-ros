@@ -12,7 +12,7 @@ export function SummaryToast() {
   useEffect(() => {
     if (processing?.phase !== 'done') return;
     setOpen(true);
-    const t = setTimeout(() => setOpen(false), 12000);
+    const t = setTimeout(() => setOpen(false), 9000);
     return () => clearTimeout(t);
   }, [processing?.phase, processing?.startedAt]);
 
@@ -28,7 +28,7 @@ export function SummaryToast() {
   const failed = processing?.failed.length ?? 0;
 
   return (
-    <div role="status" className="fixed inset-x-3 bottom-4 z-40 mx-auto max-w-lg rounded-2xl border border-line bg-paper/95 p-4 text-sm shadow-[0_20px_50px_-20px_rgb(0_0_0/0.35)] backdrop-blur">
+    <div role="status" className="fixed inset-x-3 bottom-[max(1rem,env(safe-area-inset-bottom))] z-40 mx-auto max-w-lg rounded-2xl border border-line bg-paper/95 p-3.5 text-[13px] sm:p-4 sm:text-sm shadow-[0_20px_50px_-20px_rgb(0_0_0/0.35)] backdrop-blur">
       <div className="flex items-start gap-3">
         <div className="flex-1">
           <p className="font-medium">

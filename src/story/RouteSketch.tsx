@@ -29,10 +29,12 @@ export function RouteSketch({ chapters, activeId }: { chapters: Chapter[]; activ
     }));
   }, [chapters]);
 
-  const activeIdx = Math.max(0, pts.findIndex((p) => p.id === activeId));
+  const found = pts.findIndex((p) => p.id === activeId);
+  // nincs aktív fejezet: áttekintés, minden pont egyformán, megtett út nélkül
+  const activeIdx = found < 0 ? -1 : found;
   // Felirat-ütközés: előbb az aktív, aztán a többi, és csak ha nincs túl közel egy már feliratozotthoz.
   const labeled = new Set<number>();
-  for (const i of [activeIdx, ...pts.map((_, i) => i).filter((i) => i !== activeIdx)]) {
+  for (const i of [...(activeIdx >= 0 ? [activeIdx] : []), ...pts.map((_, i) => i).filter((i) => i !== activeIdx)]) {
     const p = pts[i];
     if (p && [...labeled].every((j) => Math.hypot(pts[j].x - p.x, pts[j].y - p.y) > 9)) labeled.add(i);
   }
@@ -47,11 +49,11 @@ export function RouteSketch({ chapters, activeId }: { chapters: Chapter[]; activ
       </defs>
       <rect x="-50" y="-50" width="200" height="200" fill="url(#sketch-grid)" />
       <path d={line(pts)} fill="none" stroke="var(--c-muted)" strokeOpacity="0.5" strokeWidth="0.5" strokeDasharray="1.2 1.4" strokeLinecap="round" />
-      <path d={line(pts.slice(0, activeIdx + 1))} fill="none" stroke="var(--c-accent)" strokeWidth="0.7" strokeLinecap="round" />
+      <path d={line(pts.slice(0, Math.max(0, activeIdx + 1)))} fill="none" stroke="var(--c-accent)" strokeWidth="0.7" strokeLinecap="round" />
       {pts.map((p, i) => {
         const active = i === activeIdx;
         return (
-          <g key={p.id} style={{ transition: 'opacity .5s' }} opacity={i <= activeIdx ? 1 : 0.55}>
+          <g key={p.id} style={{ transition: 'opacity .5s' }} opacity={activeIdx < 0 || i <= activeIdx ? 1 : 0.55}>
             <circle cx={p.x} cy={p.y} r={active ? 2.6 : 1.6} fill={active ? 'var(--c-accent)' : 'var(--c-paper)'} stroke="var(--c-accent)" strokeWidth="0.5" style={{ transition: 'r .5s' }} />
             {labeled.has(i) && <text x={p.x + 3.2} y={p.y + 1.1} fontSize="3" fill="var(--c-ink)" style={{ fontFamily: 'var(--font-display)', fontStyle: 'italic' }}>
               {p.name}

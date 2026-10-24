@@ -8,16 +8,20 @@ import { LightboxProvider } from './Lightbox';
 
 const MapPanel = lazy(() => import('./MapPanel'));
 
-/** Melyik fejezet van épp a képernyő közepén – ehhez repül a térkép. */
+/**
+ * Melyik fejezetnél tart az olvasó – ehhez repül a térkép. Amíg az első
+ * fejezet címe nem ért fel a képernyő felső harmadáig, nincs aktív fejezet:
+ * ilyenkor a térkép az egész utat mutatja.
+ */
 function useActiveChapter(ids: string[]) {
-  const [active, setActive] = useState<string | undefined>(ids[0]);
+  const [active, setActive] = useState<string | undefined>(undefined);
   const refs = useRef(new Map<string, HTMLElement>());
   useEffect(() => {
     let frame = 0;
     const measure = () => {
       frame = 0;
-      // mobilon a térképsáv alatti terület közepe számít
-      const mid = window.innerHeight * (window.innerWidth >= 1024 ? 0.5 : 0.62);
+      // mobilon a térképsáv alatti terület felső része számít
+      const mid = window.innerHeight * (window.innerWidth >= 1024 ? 0.3 : 0.45);
       let best: string | undefined;
       for (const id of ids) {
         const el = refs.current.get(id);
@@ -25,7 +29,7 @@ function useActiveChapter(ids: string[]) {
         const r = el.getBoundingClientRect();
         if (r.top <= mid) best = id;
       }
-      setActive(best ?? ids[0]);
+      setActive(best);
     };
     const onScroll = () => {
       if (!frame) frame = requestAnimationFrame(measure);

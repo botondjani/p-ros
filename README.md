@@ -2,7 +2,8 @@
 
 Húzd be egy közös év vagy út fotóit, és pár másodperc alatt kapsz egy szép, görgethető visszatekintő oldalt: fejezetekre bontott idővonal, animált térkép, a legjobb képek, a végén személyes üzenet. Ajándéknak készült. Nincs regisztráció, és **a fotóid nem hagyják el a böngésződet**.
 
-- **Demo:** a landing oldalon a „Próbáld ki mintaképekkel” gomb (32 kép egy portugáliai útról).
+- **Élő oldal:** https://botondjani.github.io/p-ros/
+- **Demo:** a landing oldalon görgetve rögtön megjelenik egy kész minta (32 kép egy portugáliai útról). A „Próbáld ki a szerkesztőt a mintán” gomb ugyanezt nyitja meg szerkeszthetően.
 - **Stack:** Vite + React + TypeScript, Tailwind v4, Zustand, IndexedDB (idb-keyval), MapLibre GL + OpenFreeMap, exifr, libheif (WebAssembly), Web Workerek. Opcionális AI: egy Vercel-függvény az Anthropic API felé.
 
 ## Futtatás
@@ -37,7 +38,7 @@ Fejlesztéskor a `.env` fájlból olvas, és a Vite dev szerver is kiszolgálja 
 | Eredeti fájlok (JPEG, HEIC, …) | **Sehova.** A böngészőben olvassuk be őket, a feldolgozás után eldobjuk. |
 | EXIF (idő, GPS) | A böngészőben dolgozzuk fel. A pontos képenkénti koordináták nem kerülnek se az exportba, se az AI-hoz. |
 | Kicsinyített másolatok (1600 px és 720 px) | IndexedDB, ugyanabban a böngészőben. Így frissítés után is megmarad a munka. Az „Új” gomb törli. |
-| Export (zip) | A gépeden készül. Csak a látható képek kerülnek bele, fájlnevek és képenkénti GPS nélkül, a fejezet szintű helyekkel. |
+| Megosztás (egy HTML-fájl vagy zip) | A gépeden/telefonodon készül, szerverre nem megy. Csak a látható képek kerülnek bele, fájlnevek és képenkénti GPS nélkül, a fejezet szintű helyekkel. |
 | AI-szépítés | **Csak ha rákattintasz, és elfogadod.** Fejezetenként legfeljebb 6 kép megy el, 768 px-es, EXIF nélkül újratömörített JPEG-ként, plusz a fejezetek dátuma, helyneve és címe. A végpont csak továbbítja a kérést az Anthropic API-nak; nem tárol és nem naplóz képet. Előtte egy kép nélküli GET megnézi, be van-e állítva a kulcs. |
 | Helynevek | Offline, beépített városlistából (GeoNames, 15 000 főnél nagyobb települések). Koordináta nem megy ki. |
 | Térképcsempék | Az OpenFreeMap-ről jönnek. Ezek a térkép egy részletét kérik le, képet nem küldenek. A lekért terület elárulja, nagyjából merre jártál. Ha ez gond, kapcsold ki a netet: ilyenkor egy offline útvonalvázlat látszik. |
@@ -81,17 +82,19 @@ A „Szerkesztés” gomb után:
 
 Minden automatikusan mentődik ezen a gépen.
 
-## Export / megosztás
+## Megosztás
 
-A „Letöltés” gomb egy zip-et ad: `index.html`, `viewer.js`/`viewer.css`, `data.js`, `img/`. Kicsomagolva:
-- **statikus szerverről** (Netlify Drop, GitHub Pages, bármilyen tárhely) teljes értékű, térképpel;
-- **dupla kattintással (`file://`)** is megnyílik. Ilyenkor a térkép helyett az útvonalvázlat látszik, mert a böngészők `file://` alól nem indítanak workert.
+A „Megosztás” gomb **egyetlen HTML-fájlt** készít, szerver nélkül. A fájl mindent tartalmaz: a megjelenítőt, a betűtípusokat és az 1280 px-re kicsinyített képeket (a mintával ~6 MB).
+- **Telefonon** a rendszer megosztás-menüje nyílik meg (Messenger, WhatsApp, e-mail…), ha a böngésző tud fájlt megosztani. Ha nem tud, a fájl letöltődik.
+- **Gépen** a fájl letöltődik; e-mailhez vagy üzenethez csatolható.
+- A címzett **böngészőben** a teljes, görgethető oldalt látja (a térkép helyett az útvonalvázlatot, mert egy helyi fájlból nem tölthetők térképcsempék).
+- Ha egy telefon csak **előnézetben** nyitja meg (pl. iOS Quick Look, ahol nem fut JavaScript), akkor is látszik egy egyszerű album: a címek, a képek, a képaláírások és az üzenet. A képek csak egyszer vannak a fájlban; a megjelenítő ugyanezeket használja.
 
-A viewer klasszikus (nem modul) scriptként fordul, ezért működik `file://` alól. A legegyszerűbb megosztás: csomagold ki, és húzd a mappát az [app.netlify.com/drop](https://app.netlify.com/drop) oldalra.
+**Jelszavas védelem (opcionális):** PBKDF2-SHA256 (250 000 iteráció) + AES-GCM, WebCrypto. A képek és a szövegek is a titkosított blokkban vannak, a cím sem látszik. Jelszóval a fájl csak böngészőben nyitható meg.
 
-**Jelszavas védelem (opcionális):** PBKDF2-SHA256 (250 000 iteráció) + AES-GCM, WebCrypto. A képek és a szövegek is a titkosított blokkban vannak, a HTML-ben a cím sem látszik.
+> ⚠️ **Ez nem erős védelem.** A véletlen betekintés ellen véd. Aki megszerzi a fájlt, offline próbálgathatja a jelszót, ezért rövid vagy kitalálható jelszóval könnyen feltörhető. Érzékeny képekhez ne erre hagyatkozz.
 
-> ⚠️ **Ez nem erős védelem.** A véletlen betekintés ellen véd. Aki megszerzi a fájlokat, offline próbálgathatja a jelszót, ezért rövid vagy kitalálható jelszóval könnyen feltörhető. Érzékeny képekhez ne erre hagyatkozz. A feloldáshoz `https` vagy helyi fájl kell (titkosítatlan `http`-n a böngésző nem engedi a WebCryptót).
+**Haladó: weboldal-csomag (zip).** A panel alján lenyitható. Ez egy statikus weboldalt ad (`index.html`, `viewer.js`/`viewer.css`, `data.js`, `img/`), saját tárhelyre (Netlify, GitHub Pages). Webszerverről a térkép is teljes értékű.
 
 ## AI-szépítés
 
@@ -101,6 +104,15 @@ A viewer klasszikus (nem modul) scriptként fordul, ezért működik `file://` a
 - ha a modell biztonsági okból elutasít egy kérést, a szerver automatikusan egy tartalék modellel próbálja újra (`fallbacks: "default"`);
 - a prompt kéri: ne legyen közhelyes vagy túlzó, ne találjon ki eseményeket, és ne azonosítson embereket;
 - a user által átírt címet és szöveget nem írja felül, és minden módosítás visszavonható.
+
+## A landing beágyazott mintája
+
+A landing alján látható minta előre kiszámolt projekt (`public/demo/project.json`). Ugyanazon a feldolgozó láncon készült, mint a feltöltött képek, így a landing azonnal, feldolgozás nélkül mutatja. A kód csak akkor töltődik be, amikor a user görgetni kezd felé. A mintaképek vagy a feldolgozás változása után így kell újragenerálni:
+
+```bash
+npm run dev            # egy másik terminálban
+node scripts/build-demo-project.cjs
+```
 
 ## Offline működés
 
@@ -121,7 +133,7 @@ Headless Chromiumban mértük, 4 magos konténerben.
 | 50 vegyes kép (40 JPEG + 10 HEIC, 12 MP, 35 GPS-es, 2 dátum nélküli) → idővonal | **~7–8 mp** (cél: 30 mp) |
 | Ugyanez offline (service worker után) | **~8 mp** |
 | Demo (32 kép) → idővonal | ~1–1,5 mp |
-| Lighthouse, landing, mobil (lassú 4G + 4× CPU) | Performance **97**, Accessibility 100, Best Practices 100, SEO 100 |
+| Lighthouse, landing, mobil (lassú 4G + 4× CPU) | Performance **96**, Accessibility 100, Best Practices 100, SEO 100 |
 | Lighthouse, landing, asztali | Performance **100** |
 
 A landing gyorsaságát a build-idejű prerender (`scripts/prerender.mjs`), a magyar karakterekre szűkített, előtöltött fontok és a lustán betöltött nézetek (térkép, szerkesztő, export, AI) adják.
@@ -129,6 +141,7 @@ A landing gyorsaságát a build-idejű prerender (`scripts/prerender.mjs`), a ma
 ## Ismert korlátok
 
 - **iOS fájlválasztó:** a fotótárból választáskor az iOS a HEIC-et JPEG-re alakíthatja, és beállítástól függően elhagyhatja a helyadatokat. Ilyenkor a képek „hely nélkül” vagy a szomszédos képek helyével jelennek meg.
+- **Megosztott fájl iOS-en:** az iOS a csatolt HTML-t előnézetben nyitja meg, ahol nem fut JavaScript. Ilyenkor a statikus album látszik, a görgethető oldal és a térképvázlat nem.
 - **Időzónák:** az EXIF-idő helyi „falióra-idő” (időzóna nélkül), ezért úgy kezeljük, mintha a böngésző időzónájában készült volna. Ez a napokat és napszakokat a képen látható idő szerint adja vissza, de időzónák közötti utazásnál a sorrend órákkal elcsúszhat.
 - A térkép a fejezetek *középpontjait* köti össze légvonalban. Ez nem a valódi útvonal.
 - Az AI-végpontot élő kulccsal ebben a fejlesztői környezetben nem futtattuk le (nem volt kulcs); a szerverlogikát mockolt klienssel teszteltük.
@@ -138,14 +151,14 @@ A landing gyorsaságát a build-idejű prerender (`scripts/prerender.mjs`), a ma
 ```
 api/enhance.ts            Vercel-függvény (vékony burok)
 server/enhance.ts         AI-logika: Anthropic SDK, séma, prompt
-scripts/                  places.json előállítása (GeoNames), landing-prerender
+scripts/                  places.json (GeoNames), landing-prerender, a beágyazott minta előállítása
 src/model/                adatmodell, Zustand store, IndexedDB-mentés
 src/sources/              FileSource, DemoSource (Source absztrakció)
 src/pipeline/             worker pool, EXIF, HEIC
 src/analysis/             csoportosítás, minőség, dHash, duplikátum, válogatás, statisztika, helynevek
 src/story/                történet-nézet (az exportált oldal is ezt használja)
 src/editor/               szerkesztő rács, alsó sáv
-src/export/               zip, titkosítás, export-panel
+src/export/               egyfájlos HTML és zip, titkosítás, megosztás-panel
 src/ai/                   AI-kliens, hozzájárulás-panel
 src/viewer/               az exportált oldal belépési pontja
 tests/                    Vitest egységtesztek a tiszta logikára

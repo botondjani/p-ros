@@ -54,7 +54,8 @@ export default function MapPanel({ activeChapterId }: { activeChapterId?: string
     // file:// alól a böngésző nem indít workert, offline nincs csempe: ilyenkor a vázlat marad
     const offline = typeof navigator !== 'undefined' && navigator.onLine === false;
     // az Artifact-előnézetben a böngésző nem érheti el a csempeszervert
-    if (!webglAvailable() || offline || location.protocol === 'file:' || IS_ARTIFACT) {
+    const noMap = (globalThis as { __IK_NO_MAP__?: boolean }).__IK_NO_MAP__;
+    if (!webglAvailable() || offline || location.protocol === 'file:' || IS_ARTIFACT || noMap) {
       setFailed(true);
       return;
     }
@@ -97,6 +98,9 @@ export default function MapPanel({ activeChapterId }: { activeChapterId?: string
 
     map.on('load', () => {
       clearTimeout(timeout);
+      // a kompakt szerzői sáv kis térképen kinyitva indul és takar: összecsukjuk (az „i” gombbal nyitható)
+      container.current?.querySelector('.maplibregl-ctrl-attrib.maplibregl-compact-show')?.classList.remove('maplibregl-compact-show');
+      container.current?.querySelector('.maplibregl-ctrl-attrib')?.removeAttribute('open');
       const css = getComputedStyle(document.documentElement);
       const accent = css.getPropertyValue('--c-accent').trim() || '#b5532f';
       const muted = css.getPropertyValue('--c-muted').trim() || '#7a6d62';
@@ -118,11 +122,12 @@ export default function MapPanel({ activeChapterId }: { activeChapterId?: string
       });
 
       for (const c of located) {
-        const el = document.createElement('button');
+        // egérrel kattintható gyorsugrás; a fejezetek a szövegben amúgy is elérhetők, ezért a felolvasónak rejtett
+        const el = document.createElement('div');
         el.className = 'ik-marker';
         el.textContent = String(project.chapters.indexOf(c) + 1);
         el.title = c.location?.name ?? c.title;
-        el.setAttribute('aria-label', `Ugrás: ${el.title}`);
+        el.setAttribute('aria-hidden', 'true');
         el.addEventListener('click', () => document.querySelector(`[data-chapter-id="${c.id}"]`)?.scrollIntoView({ behavior: 'smooth' }));
         markers.current.set(c.id, new maplibregl.Marker({ element: el }).setLngLat([c.location!.lng, c.location!.lat]).addTo(map));
       }
@@ -143,14 +148,21 @@ export default function MapPanel({ activeChapterId }: { activeChapterId?: string
   useEffect(() => {
     const map = mapRef.current;
     if (!map || !ready) return;
-    const doneUpTo = project.chapters.slice(0, Math.max(0, activeIndex) + 1).filter((c) => c.location);
+    const doneUpTo = activeIndex < 0 ? [] : project.chapters.slice(0, activeIndex + 1).filter((c) => c.location);
     (map.getSource('route-done') as GeoJSONSource | undefined)?.setData(lineFeature(doneUpTo.length ? doneUpTo : located.slice(0, 1)));
     for (const [id, m] of markers.current) {
       const el = m.getElement();
       el.dataset.active = String(id === activeChapterId);
       el.dataset.done = String(doneUpTo.some((c) => c.id === id));
     }
-    if (!active?.location) return;
+    if (!active) {
+      // áttekintés: az egész út látszik
+      const b = new maplibregl.LngLatBounds();
+      for (const c of located) b.extend([c.location!.lng, c.location!.lat]);
+      map.fitBounds(b, { padding: 50, maxZoom: 11, duration: reducedMotion() ? 0 : 1200 });
+      return;
+    }
+    if (!active.location) return;
     const target = { center: [active.location.lng, active.location.lat] as [number, number], zoom: 12.2 };
     if (reducedMotion()) map.jumpTo(target);
     else map.flyTo({ ...target, speed: 0.9, curve: 1.5, essential: true, padding: { top: 20, bottom: 20, left: 20, right: 20 } });
@@ -169,6 +181,12 @@ export default function MapPanel({ activeChapterId }: { activeChapterId?: string
         style={{ filter: theme.mapFilter }}
         aria-label="Térkép"
       />
+      {!active && located.length > 1 && (
+        <div className="pointer-events-none absolute left-3 top-3 rounded-xl bg-paper/85 px-3.5 py-2 shadow-sm backdrop-blur-md sm:left-5 sm:top-5">
+          <p className="eyebrow !text-[0.6rem]">Az út</p>
+          <p className="font-display text-lg italic leading-tight">{new Set(located.map((c) => c.location!.name ?? c.title)).size} helyszín</p>
+        </div>
+      )}
       {active && (
         <div className="pointer-events-none absolute left-3 top-3 max-w-[70%] rounded-xl bg-paper/85 px-3.5 py-2 shadow-sm backdrop-blur-md sm:left-5 sm:top-5">
           <p className="eyebrow !text-[0.6rem]">{String(activeIndex + 1).padStart(2, '0')} / {String(project.chapters.length).padStart(2, '0')}</p>

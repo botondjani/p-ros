@@ -81,13 +81,36 @@ function Unlock({ onUnlock }: { onUnlock(p: Project): void }) {
   );
 }
 
+/**
+ * Egyfájlos megosztás: a képek a fájlban lévő statikus album <img> elemeiben
+ * vannak; a photo.src (#id) helyére azok data: URI-ja kerül, az albumot pedig
+ * eltüntetjük, mert a megjelenítő átveszi a helyét.
+ */
+function resolveInline(project: Project): Project {
+  const photos = Object.fromEntries(
+    Object.entries(project.photos).map(([id, p]) => {
+      const el = p.src?.display.startsWith('#') ? (document.getElementById(p.src.display.slice(1)) as HTMLImageElement | null) : null;
+      return [id, el ? { ...p, src: { display: el.src, thumb: el.src } } : p];
+    }),
+  );
+  return { ...project, photos };
+}
+
 function Root() {
   const data = window.__IDOKAPSZULA__;
-  const [project, setProject] = useState<Project | undefined>(data?.kind === 'plain' ? data.project : undefined);
+  const [project, setProject] = useState<Project | undefined>(initial);
   if (!data) return <p className="p-8">Hiányzik az adatfájl (data.js).</p>;
   if (project) return <Viewer project={project} />;
   return <Unlock onUnlock={setProject} />;
 }
+
+// Egyetlen fájlban nincs térkép-worker (és file:// alól amúgy sem indulna): az útvonalvázlat látszik.
+if (window.__IDOKAPSZULA__?.kind !== 'plain') (globalThis as { __IK_NO_MAP__?: boolean }).__IK_NO_MAP__ = true;
+
+// a képeket előbb kiolvassuk a statikus albumból, csak utána vesszük ki
+const boot = window.__IDOKAPSZULA__;
+const initial = boot?.kind === 'plain' ? boot.project : boot?.kind === 'inline' ? resolveInline(boot.project) : undefined;
+document.getElementById('ik-static')?.remove();
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
