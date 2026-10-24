@@ -1,23 +1,22 @@
 name: GitHub Pages
 
-# Minden push után lefuttatja a teszteket, lebuildeli az oldalt, és kiteszi
-# a GitHub Pages-re: https://botondjani.github.io/p-ros/
+# Minden push után lefuttatja a teszteket, lebuildeli az oldalt, és a kész
+# fájlokat a gh-pages branchre teszi, ahonnan a GitHub Pages kiszolgálja:
+# https://botondjani.github.io/p-ros/
 on:
   push:
     branches: [claude/gracious-wozniak-6l4kxw]
   workflow_dispatch:
 
 permissions:
-  contents: read
-  pages: write
-  id-token: write
+  contents: write
 
 concurrency:
   group: pages
   cancel-in-progress: true
 
 jobs:
-  build:
+  publish:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -28,17 +27,15 @@ jobs:
       - run: npm ci
       - run: npm test
       - run: npm run build:pages
-      - uses: actions/configure-pages@v5
-      - uses: actions/upload-pages-artifact@v3
-        with:
-          path: dist-pages
-
-  deploy:
-    needs: build
-    runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    steps:
-      - id: deployment
-        uses: actions/deploy-pages@v4
+      - name: Közzététel a gh-pages branchre
+        working-directory: dist-pages
+        env:
+          TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          cp index.html 404.html
+          git init -q -b gh-pages
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -q -m "Pages: ${GITHUB_SHA::7}"
+          git push -f "https://x-access-token:${TOKEN}@github.com/${GITHUB_REPOSITORY}.git" gh-pages
