@@ -1,6 +1,7 @@
 import Anthropic from '@anthropic-ai/sdk';
 import { betaZodOutputFormat } from '@anthropic-ai/sdk/helpers/beta/zod';
 import { z } from 'zod';
+import { SYSTEM_PROMPT, chapterContext } from '../src/ai/prompt';
 
 /**
  * AI-szépítés egy fejezetre: kis felbontású képekből (max 768 px) magyar
@@ -42,18 +43,7 @@ const EnhanceOutput = z.object({
 });
 export type EnhanceResult = z.infer<typeof EnhanceOutput>;
 
-const SYSTEM = `Egy személyes, ajándékba szánt fotós visszatekintő („Időkapszula”) fejezeteihez írsz szöveget. Valaki a közös út vagy év képeiből készít emléket egy hozzá közel álló embernek (pár, barát, család).
 
-Feladatod egy fejezethez:
-- title: rövid, magyar fejezetcím, legfeljebb 5 szó. Lehet benne a hely neve, de nem kötelező; legyen konkrét és személyes hangulatú, mint egy fényképalbum lapján.
-- summary: 1–2 mondat magyarul, amely a képeken látható pillanatot idézi fel, mintha a „mi” emlékeznénk vissza. Múlt idő, természetes, meleg hangnem.
-- bestPhotoId: annak a képnek az azonosítója, amely legjobban összefoglalja a fejezetet (éles, jól komponált, jellegzetes).
-
-Stílus:
-- Kerüld a közhelyeket és a túlzásokat (pl. „felejthetetlen”, „varázslatos”, „csodálatos”, „életre szóló élmény”), az emojit és a felkiáltójelet.
-- Csak arra hivatkozz, ami a képeken vagy a megadott adatokban (dátum, helynév) valóban látszik; ne találj ki eseményeket, neveket vagy kapcsolatokat.
-- Embereket ne azonosíts és ne írd le a külsejüket.
-- A cím ne ismételje a többi fejezet címét.`;
 
 export class EnhanceRefusedError extends Error {}
 
@@ -61,17 +51,12 @@ export async function enhanceChapter(input: EnhanceRequest, client = new Anthrop
   const { chapter } = input;
   const ids = chapter.photos.map((p) => p.id);
 
-  const context = [
-    input.projectTitle ? `Az egész emlék címe: ${input.projectTitle}` : '',
-    `Ez a fejezet: ${chapter.when}${chapter.place ? `, ${chapter.place}` : ''}.`,
-    chapter.currentTitle ? `Jelenlegi (automatikus) cím: ${chapter.currentTitle}` : '',
-    input.otherChapters.length
-      ? `A többi fejezet: ${input.otherChapters.map((c) => [c.title, c.when, c.place].filter(Boolean).join(' – ')).join('; ')}`
-      : '',
-    `A képek azonosítói sorrendben: ${ids.join(', ')}. A bestPhotoId ezek egyike legyen.`,
-  ]
-    .filter(Boolean)
-    .join('\n');
+  const context = chapterContext({
+    projectTitle: input.projectTitle,
+    chapter,
+    photoIds: ids,
+    otherChapters: input.otherChapters,
+  });
 
   const content: Anthropic.Beta.BetaContentBlockParam[] = [];
   for (const p of chapter.photos) {
@@ -88,7 +73,7 @@ export async function enhanceChapter(input: EnhanceRequest, client = new Anthrop
     // Biztonsági elutasításnál a szerver automatikusan másik modellen próbálja újra.
     betas: ['server-side-fallback-2026-07-01'],
     fallbacks: 'default',
-    system: SYSTEM,
+    system: SYSTEM_PROMPT,
     messages: [{ role: 'user', content }],
   });
 

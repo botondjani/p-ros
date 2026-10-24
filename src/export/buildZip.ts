@@ -5,6 +5,7 @@ import { sanitizeForExport } from './sanitize';
 import { encryptText, toBase64 } from './crypto';
 import type { DecryptedBundle, ExportData } from './types';
 import { THEME_BG } from '../app/themes';
+import { IS_ARTIFACT, useCapability, type DownloadsApi } from '../lib/runtime';
 
 export interface ExportOptions {
   password?: string;
@@ -117,7 +118,19 @@ export async function buildZip(project: Project, opts: ExportOptions = {}): Prom
   return { blob, fileName: `${slugify(clean.title)}.zip` };
 }
 
-export function downloadBlob(blob: Blob, fileName: string) {
+/** Letöltés. Az Artifactban a böngésző tiltja a közvetlen letöltést, ott a claude.ai `downloads` képessége menti (a user jóváhagyja). */
+export async function downloadBlob(blob: Blob, fileName: string): Promise<void> {
+  if (IS_ARTIFACT) {
+    const downloads = await useCapability<DownloadsApi>('downloads');
+    if (!downloads) throw new Error('Ebben a nézetben nem lehet letölteni.');
+    try {
+      await downloads.save({ filename: fileName, data: blob });
+    } catch (e) {
+      const code = (e as { code?: string })?.code;
+      throw new Error(code === 'declined' ? 'A letöltést elutasítottad.' : 'A letöltés nem sikerült.');
+    }
+    return;
+  }
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;

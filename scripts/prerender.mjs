@@ -10,7 +10,7 @@ const vite = await createServer({ server: { middlewareMode: true }, appType: 'cu
 try {
   const { App } = await vite.ssrLoadModule('/src/app/App.tsx');
   const html = renderToString(createElement(App));
-  const file = 'dist/index.html';
+  const file = `${process.argv[2] || 'dist'}/index.html`;
   const page = readFileSync(file, 'utf8');
   if (!page.includes('<div id="root"></div>')) throw new Error('#root nem található a dist/index.html-ben');
   writeFileSync(file, page.replace('<div id="root"></div>', `<div id="root">${html}</div>`));

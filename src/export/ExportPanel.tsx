@@ -22,7 +22,7 @@ export function ExportPanel({ onClose }: { onClose(): void }) {
         password: usePassword ? password : undefined,
         onProgress: (d, t) => setProgress(Math.round((d / t) * 100)),
       });
-      downloadBlob(blob, fileName);
+      await downloadBlob(blob, fileName);
       setDone(`${fileName} · ${(blob.size / 1024 / 1024).toFixed(1)} MB`);
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));

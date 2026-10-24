@@ -6,6 +6,7 @@ import { useStory } from './context';
 import { themeById } from '../app/themes';
 import { RouteSketch } from './RouteSketch';
 import { mapWorkerUrl } from './mapWorker';
+import { IS_ARTIFACT } from '../lib/runtime';
 import type { Chapter } from '../model/types';
 
 const reducedMotion = () => typeof matchMedia !== 'undefined' && matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -52,7 +53,8 @@ export default function MapPanel({ activeChapterId }: { activeChapterId?: string
     if (!container.current || !located.length) return;
     // file:// alól a böngésző nem indít workert, offline nincs csempe: ilyenkor a vázlat marad
     const offline = typeof navigator !== 'undefined' && navigator.onLine === false;
-    if (!webglAvailable() || offline || location.protocol === 'file:') {
+    // az Artifact-előnézetben a böngésző nem érheti el a csempeszervert
+    if (!webglAvailable() || offline || location.protocol === 'file:' || IS_ARTIFACT) {
       setFailed(true);
       return;
     }
@@ -174,7 +176,9 @@ export default function MapPanel({ activeChapterId }: { activeChapterId?: string
         </div>
       )}
       {failed && (
-        <p className="absolute bottom-2 right-3 text-[0.65rem] text-muted">Térkép nem elérhető – az út vázlata látszik</p>
+        <p className="absolute bottom-2 right-3 text-[0.65rem] text-muted">
+          {IS_ARTIFACT ? 'Az előnézetben nincs térképcsempe – az út vázlata látszik' : 'Térkép nem elérhető – az út vázlata látszik'}
+        </p>
       )}
     </div>
   );

@@ -25,11 +25,11 @@ self.addEventListener('activate', (event) => {
 self.addEventListener('fetch', (event) => {
   const req = event.request;
   const url = new URL(req.url);
-  if (req.method !== 'GET' || url.origin !== self.location.origin || url.pathname.startsWith('/api/')) return;
+  if (req.method !== 'GET' || url.origin !== self.location.origin || url.pathname.includes('/api/')) return;
 
   // Oldalnavigáció: hálózat először (friss verzió), offline a tárolt index.html.
   if (req.mode === 'navigate') {
-    event.respondWith(fetch(req).catch(() => caches.match('/', { ignoreVary: true })));
+    event.respondWith(fetch(req).catch(() => caches.match(ASSETS[0], { ignoreVary: true })));
     return;
   }
   // Statikus fájlok: tárból, ha van; a mintaképeket első használatkor eltesszük.
@@ -38,7 +38,7 @@ self.addEventListener('fetch', (event) => {
       (hit) =>
         hit ||
         fetch(req).then((res) => {
-          if (res.ok && url.pathname.startsWith('/demo/')) {
+          if (res.ok && url.pathname.includes('/demo/')) {
             const copy = res.clone();
             caches.open(CACHE).then((c) => c.put(req, copy));
           }

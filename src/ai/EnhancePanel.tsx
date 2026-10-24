@@ -3,6 +3,7 @@ import { useStore } from '../model/store';
 import { Modal } from '../app/Modal';
 import { AI_MAX_EDGE, candidatePhotos, enhanceAvailability, enhanceChapter, EnhanceError } from './enhanceClient';
 import { IconCheck, IconShield, IconSparkles } from '../lib/icons';
+import { IS_ARTIFACT } from '../lib/runtime';
 
 type Status = 'idle' | 'running' | 'done' | 'error';
 
@@ -65,7 +66,7 @@ export function EnhancePanel({ onClose }: { onClose(): void }) {
         }
       }
     };
-    await Promise.all([worker(), worker(), worker()]);
+    await Promise.all(IS_ARTIFACT ? [worker(), worker()] : [worker(), worker(), worker()]);
     setErrors(errs);
     setStatus(stop ? 'error' : 'done');
   };
@@ -98,7 +99,11 @@ export function EnhancePanel({ onClose }: { onClose(): void }) {
           <li>• az eredeti fájlok, a fájlnevek, az EXIF-adatok és a pontos GPS-koordináták</li>
           <li>• a többi kép</li>
         </ul>
-        <p className="mt-3 text-xs text-muted">A szerver csak továbbítja a kérést az Anthropic API-nak, nem tárol és nem naplóz képet.</p>
+        <p className="mt-3 text-xs text-muted">
+          {IS_ARTIFACT
+            ? 'Ebben az előnézetben a képeket a saját Claude-fiókod dolgozza fel (a claude.ai előbb engedélyt kér), a használat a saját keretedből megy. Nincs API-kulcs és nincs saját szerver.'
+            : 'A szerver csak továbbítja a kérést az Anthropic API-nak, nem tárol és nem naplóz képet.'}
+        </p>
       </div>
 
       {availability === 'not_configured' && (
@@ -108,7 +113,9 @@ export function EnhancePanel({ onClose }: { onClose(): void }) {
       )}
       {availability === 'unavailable' && (
         <p role="alert" className="mt-4 rounded-lg bg-accent/10 px-4 py-3 text-sm">
-          Az AI-szolgáltatás most nem érhető el (nincs hálózat, vagy ez a telepítés nem tartalmaz AI-végpontot).
+          {IS_ARTIFACT
+            ? 'Ebben a nézetben nem érhető el a Claude (nyisd meg az oldalt bejelentkezve a claude.ai-ban).'
+            : 'Az AI-szolgáltatás most nem érhető el (nincs hálózat, vagy ez a telepítés nem tartalmaz AI-végpontot).'}
         </p>
       )}
       {fatal && (

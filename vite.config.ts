@@ -46,13 +46,18 @@ function devApi(): Plugin {
 /** A landing kritikus fontjainak előtöltése (a hash-elt fájlnevek csak build után ismertek). */
 function preloadFonts(): Plugin {
   const critical = ['fraunces-latin.woff2', 'fraunces-latin-italic.woff2', 'fraunces-hu.woff2', 'fraunces-hu-italic.woff2', 'inter-latin.woff2', 'inter-hu.woff2'];
+  let baseUrl = '/';
   return {
     name: 'preload-fonts',
     apply: 'build',
+    configResolved(config) {
+      baseUrl = config.base;
+    },
     transformIndexHtml(html, ctx) {
+      const base = ctx.server?.config.base ?? (ctx.bundle ? baseUrl : '/');
       const links = Object.values(ctx.bundle ?? {})
         .filter((a) => a.type === 'asset' && a.names?.some((n) => critical.includes(n)))
-        .map((a) => ({ tag: 'link', attrs: { rel: 'preload', as: 'font', type: 'font/woff2', crossorigin: '', href: `/${a.fileName}` }, injectTo: 'head' as const }));
+        .map((a) => ({ tag: 'link', attrs: { rel: 'preload', as: 'font', type: 'font/woff2', crossorigin: '', href: `${base}${a.fileName}` }, injectTo: 'head' as const }));
       return { html, tags: links };
     },
   };
@@ -65,19 +70,24 @@ function preloadFonts(): Plugin {
  * API-hívást nem tárol.
  */
 function serviceWorker(): Plugin {
+  let base = '/';
   return {
     name: 'service-worker',
     apply: 'build',
+    configResolved(config) {
+      base = config.base;
+    },
     generateBundle(_, bundle) {
       const files = Object.keys(bundle).filter((f) => !f.endsWith('.map'));
       // az export offline is menjen: a viewer fájljai (npm run build:viewer) is kellenek
       let viewer: string[] = [];
       try {
-        viewer = ['files.json', ...JSON.parse(readFileSync(resolve(__dirname, 'public/viewer/files.json'), 'utf8'))].map((f) => `/viewer/${f}`);
+        viewer = ['files.json', ...JSON.parse(readFileSync(resolve(__dirname, 'public/viewer/files.json'), 'utf8'))].map((f) => `${base}viewer/${f}`);
       } catch {
         /* viewer nélkül is működik, csak az export kér hálózatot */
       }
-      const assets = ['/', '/places.json', '/favicon.svg', ...files.map((f) => `/${f}`), ...viewer];
+      // a service worker a saját helyéhez képest oldja fel a relatív útvonalakat
+      const assets = [base, `${base}places.json`, `${base}favicon.svg`, ...files.map((f) => `${base}${f}`), ...viewer];
       const version = createHash('sha256').update(files.sort().join('|')).digest('hex').slice(0, 12);
       const source = readFileSync(resolve(__dirname, 'src/sw.template.js'), 'utf8')
         .replace('__VERSION__', version)
@@ -87,8 +97,13 @@ function serviceWorker(): Plugin {
   };
 }
 
-export default defineConfig({
-  plugins: [react(), tailwindcss(), devApi(), preloadFonts(), serviceWorker()],
+// `--mode pages`: GitHub Pages (alútvonal, ezért relatív útvonalak).
+// `--mode artifact`: claude.ai Artifact-előnézet (relatív útvonalak, nincs service worker), lásd scripts/artifact-page.mjs
+const OUT: Record<string, string> = { artifact: 'dist-artifact', pages: 'dist-pages' };
+export default defineConfig(({ mode }) => ({
+  base: OUT[mode] ? './' : '/',
+  build: { outDir: OUT[mode] ?? 'dist' },
+  plugins: [react(), tailwindcss(), devApi(), preloadFonts(), ...(mode === 'artifact' ? [] : [serviceWorker()])],
   worker: { format: 'es' },
   // nagy, önálló (wasm/worker) csomagok: a dev szerver ne optimalizálja őket előre
   optimizeDeps: { exclude: ['libheif-js', 'maplibre-gl'] },
@@ -96,4 +111,4 @@ export default defineConfig({
     include: ['tests/**/*.test.ts'],
     environment: 'node',
   },
-});
+}));

@@ -14,6 +14,6 @@ if (root.hasChildNodes()) hydrateRoot(root, app);
 else createRoot(root).render(app);
 
 // Offline működés: a service worker első látogatáskor eltárolja az alkalmazás fájljait.
-if (import.meta.env.PROD && 'serviceWorker' in navigator) {
-  window.addEventListener('load', () => navigator.serviceWorker.register('/sw.js').catch(() => {}));
+if (import.meta.env.PROD && import.meta.env.VITE_TARGET !== 'artifact' && 'serviceWorker' in navigator) {
+  window.addEventListener('load', () => navigator.serviceWorker.register(`${import.meta.env.BASE_URL}sw.js`).catch(() => {}));
 }
