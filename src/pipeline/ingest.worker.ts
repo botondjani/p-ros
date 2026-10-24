@@ -1,5 +1,6 @@
 /// <reference lib="webworker" />
 import { readExif } from './exif';
+import { decodeHeic, isHeic } from './heic';
 import { dHash } from '../analysis/phash';
 import { exposureStats, laplacianVariance, toGray } from '../analysis/quality';
 import { ANALYSIS_MAX, DISPLAY_MAX, THUMB_MAX, type IngestRequest, type IngestResponse } from './protocol';
@@ -22,19 +23,30 @@ async function resizeToBlob(src: ImageBitmap, max: number, quality: number): Pro
 }
 
 async function process(req: IngestRequest): Promise<IngestResponse> {
-  const exif = req.meta?.takenAt != null && req.meta?.gps ? {} : await readExif(req.blob);
+  const heic = await isHeic(req.blob, req.name);
+  const exif = req.meta?.takenAt != null && req.meta?.gps ? {} : await readExif(req.blob, heic);
   const takenAtExif = req.meta?.takenAt ?? exif.takenAt;
   const gps = req.meta?.gps ?? exif.gps;
 
-  let bitmap: ImageBitmap;
+  let bitmap: ImageBitmap | undefined;
+  let decodeError = 'nem dekódolható';
   try {
     bitmap = await createImageBitmap(req.blob, { imageOrientation: 'from-image' });
-  } catch (e) {
+  } catch {
+    if (heic) {
+      try {
+        bitmap = await decodeHeic(req.blob);
+      } catch (e) {
+        decodeError = `HEIC: ${e instanceof Error ? e.message : String(e)}`;
+      }
+    }
+  }
+  if (!bitmap) {
     return {
       ok: false,
       id: req.id,
       error: 'decode',
-      message: e instanceof Error ? e.message : String(e),
+      message: decodeError,
       meta: { takenAt: takenAtExif, gps },
     };
   }

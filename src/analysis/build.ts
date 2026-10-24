@@ -58,10 +58,32 @@ export function buildProject(input: Photo[], opts: BuildOptions = {}): Project {
   const photos: Record<string, Photo> = {};
   for (const p of input) photos[p.id] = { ...p };
 
+  // Ha a képek többségének van EXIF-dátuma, a csak fájlidővel rendelkezőket
+  // (másolás/letöltés ideje) nem hisszük el: dátum nélkülinek tekintjük őket.
+  const exifCount = input.filter((p) => p.timeSource === 'exif').length;
+  const distrustFileTime = exifCount >= input.length / 2;
+  const timeOf = (p: Photo) => (p.timeSource === 'file' && distrustFileTime ? null : p.takenAt);
+
   const result = clusterPhotos(
-    input.map((p) => ({ id: p.id, takenAt: p.takenAt, gps: p.gps })),
+    input.map((p) => ({ id: p.id, takenAt: timeOf(p), gps: p.gps })),
     opts.cluster,
   );
+
+  // Dátum nélküli, de GPS-es kép: a legközelebbi (30 km-en belüli) fejezetbe kerül.
+  const stillUndated: string[] = [];
+  for (const id of result.undated) {
+    const gps = photos[id].gps;
+    let best: { g: (typeof result.groups)[number]; km: number } | undefined;
+    if (gps)
+      for (const g of result.groups) {
+        if (!g.center) continue;
+        const km = haversineKm(gps, g.center);
+        if (km <= 30 && (!best || km < best.km)) best = { g, km };
+      }
+    if (best) best.g.photoIds.push(id);
+    else stillUndated.push(id);
+  }
+  result.undated = stillUndated;
 
   for (const [id, gps] of Object.entries(result.inferredGps)) {
     photos[id].gps = gps;

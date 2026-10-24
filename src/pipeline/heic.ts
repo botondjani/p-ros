@@ -10,13 +10,43 @@ export async function isHeic(blob: Blob, name: string): Promise<boolean> {
   }
 }
 
+interface HeifImage {
+  get_width(): number;
+  get_height(): number;
+  display(target: { data: Uint8ClampedArray; width: number; height: number }, cb: (d: { data: Uint8ClampedArray } | null) => void): void;
+  free?(): void;
+}
+interface HeifModule {
+  HeifDecoder: new () => { decode(buf: Uint8Array): HeifImage[] };
+}
+
+let lib: HeifModule | undefined;
+
 /**
- * HEIC → JPEG konverzió a fő szálon (a heic2any DOM-ot használ). Lustán
- * töltjük be, mert nagy; csak akkor kell, ha a böngésző maga nem tudja
- * dekódolni (Safari tudja).
+ * HEIC dekódolás a workerben, libheif WebAssembly-vel. Csak akkor töltődik
+ * be (≈2 MB), ha a böngésző maga nem tudja a HEIC-et (Safari tudja), és
+ * minden worker párhuzamosan dekódol.
  */
-export async function convertHeic(blob: Blob): Promise<Blob> {
-  const { default: heic2any } = await import('heic2any');
-  const out = await heic2any({ blob, toType: 'image/jpeg', quality: 0.9 });
-  return Array.isArray(out) ? out[0] : out;
+export async function decodeHeic(blob: Blob): Promise<ImageBitmap> {
+  if (!lib) {
+    // @ts-expect-error – a csomagnak nincs típusdeklarációja ehhez a belépési ponthoz
+    const { default: factory } = await import('libheif-js/libheif-wasm/libheif-bundle.mjs');
+    lib = factory() as HeifModule;
+  }
+  const decoder = new lib.HeifDecoder();
+  const images = decoder.decode(new Uint8Array(await blob.arrayBuffer()));
+  if (!images.length) throw new Error('üres HEIC');
+  const img = images[0];
+  const width = img.get_width();
+  const height = img.get_height();
+  try {
+    const pixels = await new Promise<Uint8ClampedArray>((resolve, reject) =>
+      img.display({ data: new Uint8ClampedArray(width * height * 4), width, height }, (d) =>
+        d ? resolve(d.data) : reject(new Error('HEIC dekódolás sikertelen')),
+      ),
+    );
+    return await createImageBitmap(new ImageData(pixels as Uint8ClampedArray<ArrayBuffer>, width, height));
+  } finally {
+    for (const im of images) im.free?.();
+  }
 }

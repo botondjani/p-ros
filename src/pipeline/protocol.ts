@@ -6,8 +6,6 @@ export interface IngestRequest {
   blob: Blob;
   lastModified?: number;
   meta?: { takenAt?: number; gps?: GeoPoint };
-  /** Ha a böngésző nem tudja dekódolni (HEIC), a fő szál átkonvertálja, és újraküldi. */
-  converted?: boolean;
 }
 
 export interface IngestSuccess {
@@ -31,7 +29,7 @@ export interface IngestFailure {
   id: string;
   error: 'decode' | 'unknown';
   message: string;
-  /** Az EXIF-adatok akkor is visszajönnek, ha a dekódolás nem sikerült (HEIC). */
+  /** Az EXIF-adatok akkor is visszajönnek, ha a dekódolás nem sikerült. */
   meta?: { takenAt?: number; gps?: GeoPoint };
 }
 

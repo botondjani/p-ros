@@ -21,20 +21,53 @@ function toLocalMs(v: unknown): number | undefined {
   return undefined;
 }
 
-export async function readExif(blob: Blob): Promise<ExifInfo> {
-  try {
-    const data = await exifr.parse(blob, {
-      pick: ['DateTimeOriginal', 'CreateDate', 'DateTimeDigitized', 'ModifyDate', 'GPSLatitude', 'GPSLongitude', 'GPSLatitudeRef', 'GPSLongitudeRef'],
-      gps: true,
-      reviveValues: true,
-    });
-    if (!data) return {};
-    const takenAt = toLocalMs(data.DateTimeOriginal) ?? toLocalMs(data.CreateDate) ?? toLocalMs(data.DateTimeDigitized);
-    const gps = { lat: data.latitude, lng: data.longitude };
-    // 1990 előtti dátum szinte mindig gyári beállítás, nem valódi
-    const plausible = takenAt && takenAt > Date.UTC(1990, 0, 1) && takenAt < Date.now() + 86_400_000 * 2;
-    return { takenAt: plausible ? takenAt : undefined, gps: isValidGps(gps) ? gps : undefined };
-  } catch {
-    return {};
+const PICK = {
+  pick: ['DateTimeOriginal', 'CreateDate', 'DateTimeDigitized', 'GPSLatitude', 'GPSLongitude', 'GPSLatitudeRef', 'GPSLongitudeRef'],
+  gps: true,
+  reviveValues: true,
+};
+
+/** Az `Exif\0\0` jelölő utáni TIFF-fejléc helye a bájtsorban, vagy -1. */
+export function findTiffHeader(bytes: Uint8Array): number {
+  for (let i = 0; i < bytes.length - 10; i++) {
+    if (bytes[i] !== 0x45 || bytes[i + 1] !== 0x78 || bytes[i + 2] !== 0x69 || bytes[i + 3] !== 0x66) continue; // "Exif"
+    if (bytes[i + 4] !== 0 || bytes[i + 5] !== 0) continue;
+    const a = bytes[i + 6];
+    const b = bytes[i + 7];
+    if ((a === 0x4d && b === 0x4d && bytes[i + 9] === 0x2a) || (a === 0x49 && b === 0x49 && bytes[i + 8] === 0x2a)) return i + 6;
   }
+  return -1;
+}
+
+function toInfo(data: Record<string, unknown> | undefined): ExifInfo {
+  if (!data) return {};
+  const takenAt = toLocalMs(data.DateTimeOriginal) ?? toLocalMs(data.CreateDate) ?? toLocalMs(data.DateTimeDigitized);
+  const gps = { lat: data.latitude as number, lng: data.longitude as number };
+  // 1990 előtti dátum szinte mindig gyári beállítás, nem valódi
+  const plausible = takenAt && takenAt > Date.UTC(1990, 0, 1) && takenAt < Date.now() + 86_400_000 * 2;
+  return { takenAt: plausible ? takenAt : undefined, gps: isValidGps(gps) ? gps : undefined };
+}
+
+/**
+ * EXIF olvasása. Ha az exifr nem boldogul a konténerrel (egyes HEIC-
+ * elrendezéseknél előfordul), a fájlban megkeressük a nyers TIFF-blokkot,
+ * és azt értelmeztetjük.
+ */
+export async function readExif(blob: Blob, heic = false): Promise<ExifInfo> {
+  let info: ExifInfo = {};
+  try {
+    info = toInfo(await exifr.parse(blob, PICK));
+  } catch {
+    /* tartalék lent */
+  }
+  if (heic && !info.takenAt && !info.gps) {
+    try {
+      const bytes = new Uint8Array(await blob.arrayBuffer());
+      const at = findTiffHeader(bytes);
+      if (at >= 0) info = toInfo(await exifr.parse(bytes.slice(at, at + 256 * 1024), PICK));
+    } catch {
+      /* nincs használható EXIF */
+    }
+  }
+  return info;
 }

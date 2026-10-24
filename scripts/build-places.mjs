@@ -37,6 +37,8 @@ const cc = [];
 const pts = [];
 for (const line of rows) {
   const f = line.split('\t');
+  // városrészek (PPLX), történelmi/elhagyott települések kihagyása: a városnév kell, nem a kerület
+  if (['PPLX', 'PPLH', 'PPLQ', 'PPLW'].includes(f[7])) continue;
   const name = f[1];
   const asciiName = f[2];
   const lat = Number(f[4]);

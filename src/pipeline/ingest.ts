@@ -1,7 +1,6 @@
 import type { Photo, RawItem, Source } from '../model/types';
 import { IngestPool } from './pool';
 import type { IngestResponse } from './protocol';
-import { convertHeic, isHeic } from './heic';
 import { putImages } from '../lib/images';
 
 export interface IngestProgress {
@@ -43,19 +42,9 @@ export async function ingest(
         fail(item, 'túl nagy fájl');
         return;
       }
-      let res: IngestResponse = await pool.run({ ...item });
-      if (!res.ok && res.error === 'decode' && (await isHeic(item.blob, item.name))) {
-        try {
-          const jpeg = await convertHeic(item.blob);
-          const meta = { ...res.meta, ...item.meta };
-          res = await pool.run({ ...item, blob: jpeg, meta, converted: true });
-        } catch (e) {
-          fail(item, 'HEIC nem olvasható');
-          return;
-        }
-      }
+      const res: IngestResponse = await pool.run({ ...item });
       if (!res.ok) {
-        fail(item, res.error === 'decode' ? 'nem kép, vagy sérült' : res.message);
+        fail(item, res.error === 'decode' ? 'nem kép, sérült, vagy nem támogatott formátum' : res.message);
         return;
       }
       await putImages(projectId, item.id, { display: res.display, thumb: res.thumb });
