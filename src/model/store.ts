@@ -35,7 +35,13 @@ interface State {
   reorderChapterPhotos(chapterId: string, photoIds: string[]): void;
   moveChapter(chapterId: string, dir: -1 | 1): void;
   setTheme(theme: ThemeId): void;
+  /** Visszavonás: az utolsó szerkesztés előtti állapot. */
+  undo(): void;
+  canUndo: boolean;
 }
+
+const history: Project[] = [];
+const HISTORY_MAX = 50;
 
 let saveTimer: ReturnType<typeof setTimeout> | undefined;
 function scheduleSave(p?: Project) {
@@ -50,7 +56,10 @@ export const useStore = create<State>((set, get) => {
     const p = get().project;
     if (!p) return;
     const next = fn(p);
-    set({ project: next });
+    if (next === p) return;
+    history.push(p);
+    if (history.length > HISTORY_MAX) history.shift();
+    set({ project: next, canUndo: true });
     scheduleSave(next);
   };
   const mapChapter = (id: string, fn: (c: Chapter) => Chapter) =>
@@ -66,8 +75,17 @@ export const useStore = create<State>((set, get) => {
     setError: (error) => set({ error }),
     setSavedProject: (savedProject) => set({ savedProject }),
     setProject: (project) => {
-      set({ project });
+      history.length = 0;
+      set({ project, canUndo: false });
       scheduleSave(project);
+    },
+
+    canUndo: false,
+    undo: () => {
+      const prev = history.pop();
+      if (!prev) return;
+      set({ project: prev, canUndo: history.length > 0 });
+      scheduleSave(prev);
     },
 
     updateProject: (patch) => mutate((p) => ({ ...p, ...patch })),

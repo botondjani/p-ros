@@ -28,7 +28,9 @@ export function Hero() {
     <header className="relative flex min-h-[100svh] flex-col overflow-hidden px-5 pb-10 pt-24 sm:px-10 lg:px-16">
       <div className="relative z-10 grid flex-1 items-center gap-10 lg:grid-cols-[1.1fr_1fr]">
         <div className="max-w-2xl">
-          <p className="eyebrow mb-6">{project.subtitle}</p>
+          <div className="eyebrow mb-6">
+            <EditableText value={project.subtitle} editing={editing} onChange={(subtitle) => updateProject({ subtitle })} label="Alcím" />
+          </div>
           <h1 className="font-display text-[clamp(2.9rem,9vw,7.2rem)] font-[350] leading-[0.95] tracking-[-0.02em] text-balance">
             <EditableText
               value={project.title}

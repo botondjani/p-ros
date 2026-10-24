@@ -4,6 +4,7 @@ import { Landing } from './Landing';
 import { Processing } from './Processing';
 import { TopBar } from './TopBar';
 import { SummaryToast } from './SummaryToast';
+import { EditorBar } from '../editor/EditorBar';
 import { Story } from '../story/Story';
 import { StoryContext } from '../story/context';
 import { restoreSaved, startFiles } from './flow';
@@ -42,8 +43,8 @@ export function App() {
       {view === 'story' && project && (
         <StoryContext.Provider value={{ project, projectId: project.id, editing, standalone: false }}>
           <TopBar onExport={() => setPanel('export')} onEnhance={() => setPanel('enhance')} />
-          <SummaryToast />
-          <main>
+          {editing ? <EditorBar /> : <SummaryToast />}
+          <main className={editing ? 'pb-20' : ''}>
             <Story />
           </main>
           <footer className="px-5 pb-10 text-center text-xs text-muted">
