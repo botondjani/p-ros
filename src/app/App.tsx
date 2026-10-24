@@ -1,26 +1,19 @@
-import { useCallback, useEffect, useState } from 'react';
+import { lazy, Suspense, useCallback, useEffect } from 'react';
 import { useStore } from '../model/store';
 import { Landing } from './Landing';
 import { Processing } from './Processing';
-import { TopBar } from './TopBar';
-import { SummaryToast } from './SummaryToast';
-import { EditorBar } from '../editor/EditorBar';
-import { Story } from '../story/Story';
-import { StoryContext } from '../story/context';
 import { restoreSaved, startFiles } from './flow';
 import { useFileDrop } from './useFileDrop';
 import { THEME_BG } from './themes';
 import { IconUpload } from '../lib/icons';
-import { ExportPanel } from '../export/ExportPanel';
-import { EnhancePanel } from '../ai/EnhancePanel';
+
+const StoryView = lazy(() => import('./StoryView'));
 
 export function App() {
   const view = useStore((s) => s.view);
   const project = useStore((s) => s.project);
-  const editing = useStore((s) => s.editing);
   const error = useStore((s) => s.error);
   const setError = useStore((s) => s.setError);
-  const [panel, setPanel] = useState<'export' | 'enhance' | null>(null);
 
   useEffect(() => {
     restoreSaved();
@@ -43,21 +36,10 @@ export function App() {
       {view === 'landing' && <Landing />}
       {view === 'processing' && <Processing />}
       {view === 'story' && project && (
-        <StoryContext.Provider value={{ project, projectId: project.id, editing, standalone: false }}>
-          <TopBar onExport={() => setPanel('export')} onEnhance={() => setPanel('enhance')} />
-          {editing ? <EditorBar /> : <SummaryToast />}
-          <main className={editing ? 'pb-20' : ''}>
-            <Story />
-          </main>
-          <footer className="px-5 pb-10 text-center text-xs text-muted">
-            Készült az Időkapszulával · a képek nem hagyták el ezt a gépet
-            {project.isDemo && <span className="block mt-1">Mintaképek: Unsplash License · az időpontok és helyek illusztratívak</span>}
-          </footer>
-        </StoryContext.Provider>
+        <Suspense fallback={<Processing />}>
+          <StoryView />
+        </Suspense>
       )}
-
-      {panel === 'export' && project && <ExportPanel onClose={() => setPanel(null)} />}
-      {panel === 'enhance' && project && <EnhancePanel onClose={() => setPanel(null)} />}
 
       {dragging && (
         <div className="pointer-events-none fixed inset-0 z-[60] flex items-center justify-center bg-bg/80 backdrop-blur-sm">

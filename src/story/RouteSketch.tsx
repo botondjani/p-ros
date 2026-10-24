@@ -19,13 +19,13 @@ export function RouteSketch({ chapters, activeId }: { chapters: Chapter[]; activ
     const minY = Math.min(...lats);
     const maxY = Math.max(...lats);
     const span = Math.max(maxX - minX, maxY - minY, 1e-3);
-    // 100×100-as nézetbe, 15% margóval, középre igazítva
+    // 100×100-as nézetbe; vízszintesen balra tolva, hogy a feliratok jobbra elférjenek
     return located.map(({ c, i }, j) => ({
       id: c.id,
       n: i + 1,
       name: c.location!.name ?? c.title,
-      x: 15 + ((xs[j] - (minX + maxX) / 2) / span) * 70 + 35,
-      y: 15 + (((minY + maxY) / 2 - lats[j]) / span) * 70 + 35,
+      x: 42 + ((xs[j] - (minX + maxX) / 2) / span) * 60,
+      y: 50 + (((minY + maxY) / 2 - lats[j]) / span) * 70,
     }));
   }, [chapters]);
 
