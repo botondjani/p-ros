@@ -5,8 +5,8 @@ import tailwindcss from '@tailwindcss/vite';
 export default defineConfig({
   plugins: [react(), tailwindcss()],
   worker: { format: 'es' },
-  // a libheif wasm-csomag nagy és önálló; ne optimalizálja előre a dev szerver
-  optimizeDeps: { exclude: ['libheif-js'] },
+  // nagy, önálló (wasm/worker) csomagok: a dev szerver ne optimalizálja őket előre
+  optimizeDeps: { exclude: ['libheif-js', 'maplibre-gl'] },
   test: {
     include: ['tests/**/*.test.ts'],
     environment: 'node',

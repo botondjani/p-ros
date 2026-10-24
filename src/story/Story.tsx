@@ -16,7 +16,8 @@ function useActiveChapter(ids: string[]) {
     let frame = 0;
     const measure = () => {
       frame = 0;
-      const mid = window.innerHeight * 0.5;
+      // mobilon a térképsáv alatti terület közepe számít
+      const mid = window.innerHeight * (window.innerWidth >= 1024 ? 0.5 : 0.62);
       let best: string | undefined;
       for (const id of ids) {
         const el = refs.current.get(id);
